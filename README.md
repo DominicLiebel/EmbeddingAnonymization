@@ -10,11 +10,18 @@ This Python project aims to anonymize embeddings while maintaining high accuracy
 <img width="330" alt="image" src="https://github.com/DominicLiebel/EmbeddingAnonymization/assets/20253502/4f288bd4-02eb-4530-af99-8da8cdfbd8c2">
 
 ### Modern Art
-<img width="330" alt="image" src="https://github.com/DominicLiebel/EmbeddingAnonymization/assets/20253502/cb621191-1809-4a17-8b4c-ca5516c52ca3">
+<img width="330" alt="image" src="https://github.com/DominicLiebel/EmbeddingAnonymization/assets/20253502/cb621191-1809-4a17-8b4c-ca5516c52ca3"><br>
+<img width="330" alt="image" src="https://github.com/DominicLiebel/EmbeddingAnonymization/assets/20253502/7474b35a-0ec8-45df-9bde-4224b04af091">
 
 ## Measures of Anonymization
 - **hasOverlap:** Simple check to see if anonymized embeddings have any overlap with original embeddings.
 - **Reconstruction Error:** `torch.mean((normalized_test_embeddings - test_embeddings_anonymized)**2).item()`
+
+### Density Based Anonymization
+<img width="330" alt="image" src="https://github.com/DominicLiebel/EmbeddingAnonymization/assets/20253502/07e22891-168a-4cfb-97ff-cccf4d4ab6c8"><br>
+`Epsilon=1, Min Samples=10, Noise Scale=1, Accuracy=92.39%,Reconstruction Error=2.0019`
+
+
 
 ## Different Anonymization Techniques Employed
 - `anonymize_embeddings_random(embeddings, noise_factor=0.1)`
