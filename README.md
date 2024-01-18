@@ -3,14 +3,14 @@
 This Python project aims to anonymize embeddings while maintaining high accuracy with a high reconstruction error.
 
 ## Original CIFAR10 Embeddings
-![Before Anonymization](https://github.com/DominicLiebel/EmbeddingAnonymization/assets/20253502/1da5bc1e-e0fb-4d9f-b83f-a4976925a5b7)
+<img width="330" alt="image" src="https://github.com/DominicLiebel/EmbeddingAnonymization/assets/20253502/1da5bc1e-e0fb-4d9f-b83f-a4976925a5b7">
 
 ## First Tries
 ### The Egg
-![The Egg](https://github.com/DominicLiebel/EmbeddingAnonymization/assets/20253502/4f288bd4-02eb-4530-af99-8da8cdfbd8c2)
+<img width="330" alt="image" src="https://github.com/DominicLiebel/EmbeddingAnonymization/assets/20253502/4f288bd4-02eb-4530-af99-8da8cdfbd8c2">
 
 ### Modern Art
-![Modern Art](https://github.com/DominicLiebel/EmbeddingAnonymization/assets/20253502/cb621191-1809-4a17-8b4c-ca5516c52ca3)
+<img width="330" alt="image" src="https://github.com/DominicLiebel/EmbeddingAnonymization/assets/20253502/cb621191-1809-4a17-8b4c-ca5516c52ca3">
 
 ## Measures of Anonymization
 - **hasOverlap:** Simple check to see if anonymized embeddings have any overlap with original embeddings.
@@ -34,7 +34,7 @@ The project is structured as follows:
 - **evaluation.py:** Contains a function to find the best parameters for anonymization.
 - **visualization.py:** Provides a visualization function.
 - **data_loader.py:** Contains a function to load the data.
-- 
+
 
 ## Getting Started
 To get started, follow these steps:
