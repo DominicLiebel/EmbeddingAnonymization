@@ -62,6 +62,38 @@ Now, let's analyze the outcomes:
 
 It appears there is a discernible trade-off between accuracy and epsilon, with higher epsilon values corresponding to lower accuracy. The relationship with noise scale is not as straightforward.
 
+# Experimental Results Interpretation (CIFAR100)
+<img width="454" alt="image" src="https://github.com/DominicLiebel/EmbeddingAnonymization/assets/20253502/3a98a94f-05bb-4e30-8023-f45f50d01a3f">
+
+## Negative Accuracy Loss in Anonymization
+
+In the context of the anonymization process, the term "accuracy loss" refers to the difference in accuracy between the original (unanonymized) embeddings and the anonymized embeddings. A negative accuracy loss indicates that the anonymized embeddings outperformed the unanonymized embeddings.
+
+## Interpretation of Negative Accuracy Loss
+
+Consider the data point in the generated graph:
+
+- **Epsilon=0.85, Min Samples=3, Noise Scale=0.5, Accuracy=77.84%, Reconstruction Error=0.4998**
+
+In this case, the accuracy of the anonymized embeddings is approximately 77.84%, and the reconstruction error is 0.4998. The key observation is that the accuracy of the anonymized embeddings is higher than that of the original (unanonymized) embeddings. The negative accuracy loss at around -0.1 indicates an improvement in accuracy after the anonymization process.
+
+## Implications
+
+- **Positive Anonymization Impact:** A negative accuracy loss suggests that the anonymization process, under the specified parameters (Epsilon, Min Samples, Noise Scale), has resulted in embeddings that perform better in terms of accuracy compared to the original embeddings.
+
+- **Enhanced Privacy:** Achieving better accuracy with anonymized embeddings implies that privacy-preserving measures, such as noise addition and anonymization techniques, were successful in maintaining or even improving the utility of the data while protecting individual privacy.
+
+## Considerations
+
+- **Parameter Sensitivity:** The interpretation is based on the specific parameters used in the anonymization process (Epsilon, Min Samples, Noise Scale). Different parameter combinations may lead to varied results, and it is essential to carefully choose these parameters based on the desired trade-off between privacy and utility.
+
+- **Visualizing Trends:** It is recommended to visualize trends across different parameter values to gain insights into the impact of anonymization on accuracy and reconstruction error.
+
+## Conclusion
+
+Negative accuracy loss in anonymization, as observed in this specific data point, signifies an encouraging outcome where the anonymized embeddings perform better in terms of accuracy than the original embeddings. This documentation serves to highlight the positive impact of the anonymization process on the utility of the data while preserving privacy.
+
+
 
 
 ## Getting Started
