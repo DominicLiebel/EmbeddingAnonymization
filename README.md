@@ -2,16 +2,10 @@
 
 This Python project aims to anonymize embeddings while maintaining high accuracy with a high reconstruction error.
 
-## Original CIFAR10 Embeddings
+## Original CIFAR100 Embeddings
 <img width="330" alt="image" src="https://github.com/DominicLiebel/EmbeddingAnonymization/assets/20253502/1da5bc1e-e0fb-4d9f-b83f-a4976925a5b7">
 
-## First Tries
-### The Egg
-<img width="330" alt="image" src="https://github.com/DominicLiebel/EmbeddingAnonymization/assets/20253502/4f288bd4-02eb-4530-af99-8da8cdfbd8c2">
 
-### Modern Art
-<img width="330" alt="image" src="https://github.com/DominicLiebel/EmbeddingAnonymization/assets/20253502/cb621191-1809-4a17-8b4c-ca5516c52ca3"><br>
-<img width="330" alt="image" src="https://github.com/DominicLiebel/EmbeddingAnonymization/assets/20253502/7474b35a-0ec8-45df-9bde-4224b04af091">
 
 ## Measures of Anonymization
 - **hasOverlap:** Simple check to see if anonymized embeddings have any overlap with original embeddings.
@@ -19,7 +13,7 @@ This Python project aims to anonymize embeddings while maintaining high accuracy
 
 ### Density Based Anonymization
 <img width="330" alt="image" src="https://github.com/DominicLiebel/EmbeddingAnonymization/assets/20253502/07e22891-168a-4cfb-97ff-cccf4d4ab6c8"><br>
-`Epsilon=1, Min Samples=10, Noise Scale=1, Accuracy=92.39%,Reconstruction Error=2.0019`
+`Epsilon=1.1, Min Samples=3, Noise Scale=1, Accuracy=94.57%,Reconstruction Error=2.0002`
 
 
 
@@ -43,6 +37,33 @@ The project is structured as follows:
 - **data_loader.py:** Contains a function to load the data.
 
 
+# Experimental Results Interpretation (CIFAR10)
+<img width="454" alt="image" src="https://github.com/DominicLiebel/EmbeddingAnonymization/assets/20253502/2b761cf2-fb24-49c4-ba3d-91cfcfaf77c3">
+
+
+These results are part of an experimental optimization process where various parameters are systematically altered, and the resulting accuracy and reconstruction error are documented. Let's delve into the interpretation:
+
+- **Epsilon**: Varied in the range of 1.0 to 1.5 with increments of 0.1.
+- **Min Samples**: Kept constant at 3 throughout all iterations.
+- **Noise Scale**: Varied from 1.0 to 1.5 in increments of 0.25.
+
+Now, let's analyze the outcomes:
+
+1. **Accuracy**: Represents the percentage of correctly classified instances. Higher accuracy values are generally preferred.
+
+   - Accuracy ranges from approximately 78.56% to 94.65%.
+   - Generally, there seems to be a negative correlation between epsilon and accuracy.
+   - Within a specific epsilon value, an increase in noise scale tends to result in decreased accuracy.
+
+2. **Reconstruction Error**: Indicates how well the reconstructed data aligns with the original data. Higher reconstruction error values are desirable for anonymization.
+
+   - Reconstruction error ranges from approximately 1.9978 to 4.5029.
+   - The reconstruction error does not exhibit a clear trend with epsilon or noise scale.
+
+It appears there is a discernible trade-off between accuracy and epsilon, with higher epsilon values corresponding to lower accuracy. The relationship with noise scale is not as straightforward.
+
+
+
 ## Getting Started
 To get started, follow these steps:
 1. Clone the repository: `git clone https://github.com/DominicLiebel/EmbeddingAnonymization.git`
@@ -51,3 +72,9 @@ To get started, follow these steps:
 4. Run the main script: `python main.py`
 
 Feel free to explore and modify the code based on your specific requirements.
+
+
+## First Tries
+<img width="330" alt="image" src="https://github.com/DominicLiebel/EmbeddingAnonymization/assets/20253502/4f288bd4-02eb-4530-af99-8da8cdfbd8c2">
+<img width="330" alt="image" src="https://github.com/DominicLiebel/EmbeddingAnonymization/assets/20253502/cb621191-1809-4a17-8b4c-ca5516c52ca3">
+<img width="330" alt="image" src="https://github.com/DominicLiebel/EmbeddingAnonymization/assets/20253502/7474b35a-0ec8-45df-9bde-4224b04af091">
