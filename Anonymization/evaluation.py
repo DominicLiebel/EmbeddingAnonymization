@@ -14,9 +14,11 @@ def find_best_parameters(original_model_accuracy, normalized_train_embeddings, n
     best_min_samples = None
     best_noise_scale = None
     best_accuracy = 0.0
+
     best_reconstruction_error = float('inf')
     reconstruction_errors = []
     accuracy_losses = []
+
     all_epsilons = []
     all_min_samples_values = []
     all_noise_scale_values = []
