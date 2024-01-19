@@ -10,9 +10,15 @@ This Python project aims to anonymize embeddings while maintaining high accuracy
 ## Measures of Anonymization
 - **hasOverlap:** Simple check to see if anonymized embeddings have any overlap with original embeddings.
 - **Reconstruction Error:** `torch.mean((normalized_test_embeddings - test_embeddings_anonymized)**2).item()`
+- **Mean Relative Difference**
 
-### Density Based Anonymization
-<img width="330" alt="image" src="https://github.com/DominicLiebel/EmbeddingAnonymization/assets/20253502/07e22891-168a-4cfb-97ff-cccf4d4ab6c8"><br>
+The reconstruction error focuses on the fidelity of the anonymized embeddings compared to the original embeddings, the mean relative differences give an average percentage change, providing a broader understanding of the overall impact on individual embeddings across the dataset. Both metrics are valuable depending on the specific goals and considerations of the anonymization process.
+
+### Density Based Anonymization (CIFAR100)
+<img width="330" alt="image" src="https://github.com/DominicLiebel/EmbeddingAnonymization/assets/20253502/7020740f-63ee-4231-b50e-49fa3cb3ddd6">
+
+
+<br>
 `Epsilon=1.1, Min Samples=3, Noise Scale=1, Accuracy=94.57%,Reconstruction Error=2.0002`
 
 
