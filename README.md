@@ -9,8 +9,8 @@ This Python project aims to anonymize embeddings while maintaining high accuracy
 
 ## Measures of Anonymization
 - **hasOverlap:** Simple check to see if anonymized embeddings have any overlap with original embeddings.
-- **Reconstruction Error:** `torch.mean((normalized_test_embeddings - test_embeddings_anonymized)**2).item()`
-- **Mean Relative Difference**
+- **Reconstruction Error:** Reconstruction error quantifies how well the anonymized embeddings can reconstruct the original embeddings.
+- **Mean Relative Difference:** Mean relative differences measure the average percentage change between the original and anonymized embeddings for each image.
 
 The reconstruction error focuses on the fidelity of the anonymized embeddings compared to the original embeddings, the mean relative differences give an average percentage change, providing a broader understanding of the overall impact on individual embeddings across the dataset. Both metrics are valuable depending on the specific goals and considerations of the anonymization process.
 
