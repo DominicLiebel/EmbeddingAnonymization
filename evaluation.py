@@ -6,6 +6,7 @@ from model import OptimizedModel
 from train_util import train_and_evaluate
 import numpy as np
 
+
 def find_best_parameters(original_model_accuracy, normalized_train_embeddings, normalized_test_embeddings,
                          original_train_labels, original_test_labels, device, method,
                          epsilons, min_samples_values, noise_scale_values):
@@ -37,7 +38,8 @@ def find_best_parameters(original_model_accuracy, normalized_train_embeddings, n
                 normalized_test_embeddings = normalized_test_embeddings.to(device)
 
                 # Train and evaluate the model on anonymized data
-                anonymized_model = OptimizedModel(input_size=test_anonymized_embeddings.shape[1], output_size=len(np.unique(original_test_labels))).to(device)
+                anonymized_model = OptimizedModel(input_size=test_anonymized_embeddings.shape[1],
+                                                  output_size=len(np.unique(original_test_labels))).to(device)
                 anonymized_model_accuracy = train_and_evaluate(
                     anonymized_model,
                     train_embeddings_anonymized,
@@ -54,7 +56,7 @@ def find_best_parameters(original_model_accuracy, normalized_train_embeddings, n
                 reconstruction_errors.append(reconstruction_error)
                 accuracy_losses.append(accuracy_loss)
 
-                # Update best parameters based on accuracy or reconstruction error
+                # Update the best parameters based on accuracy or reconstruction error
                 if anonymized_model_accuracy > best_accuracy:
                     best_accuracy = anonymized_model_accuracy
                     best_epsilon = eps
