@@ -110,7 +110,8 @@ To get started, follow these steps:
 1. Clone the repository: `git clone https://github.com/DominicLiebel/EmbeddingAnonymization.git`
 2. Navigate to the project directory: `cd EmbeddingAnonymization`
 3. Install the required dependencies: `pip install -r requirements.txt`
-4. Run the main script: `python main.py`
+4. Provide test_cifar10.npz, train_cifar10.npz, test_cifar100.npz, train_cifar100.npz
+5. Run the main script: `python main.py`
 
 Feel free to explore and modify the code based on your specific requirements.
 
