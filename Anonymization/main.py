@@ -82,13 +82,10 @@ def main():
                              optimizer, criterion, train_labels, test_labels)
         plot_accuracy_vs_error(args, reconstruction_errors, accuracy_losses, args.method, all_epsilons, all_min_samples_values, all_noise_scale_values)
 
-
     else:
         # Anonymize train and test embeddings
-        anonymized_train_embeddings = anonymize_embeddings(normalized_train_embeddings, method=args.method,
-                                                           eps=args.eps, min_samples=args.min_samples, noise_scale=args.noise_scale)
-        anonymized_test_embeddings = anonymize_embeddings(normalized_test_embeddings, method=args.method,
-                                                          eps=args.eps, min_samples=args.min_samples, noise_scale=args.noise_scale)
+        anonymized_train_embeddings = anonymize_embeddings(normalized_train_embeddings, args)
+        anonymized_test_embeddings = anonymize_embeddings(normalized_test_embeddings, args)
 
 
         print("Anonymized embeddings")
