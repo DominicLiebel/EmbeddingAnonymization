@@ -64,9 +64,9 @@ def find_best_parameters(args, normalized_train_embeddings, normalized_test_embe
             for noise_scale in args.noise_scale_tuning:
                 # Anonymize embeddings using selected method
                 test_anonymized_embeddings = (
-                    anonymize_embeddings(normalized_test_embeddings, args.method, eps=eps, min_samples=min_samples, noise_scale=noise_scale))
+                    anonymize_embeddings(normalized_test_embeddings, args))
                 train_embeddings_anonymized = (
-                    anonymize_embeddings(normalized_train_embeddings, args.method, eps=eps, min_samples=args.min_samples, noise_scale=args.noise_scale))
+                    anonymize_embeddings(normalized_train_embeddings, args))
 
                 train_dataset = TensorDataset(torch.from_numpy(train_embeddings_anonymized), torch.from_numpy(train_labels))
                 test_dataset = TensorDataset(torch.from_numpy(test_anonymized_embeddings), torch.from_numpy(test_labels))
@@ -110,4 +110,4 @@ def find_best_parameters(args, normalized_train_embeddings, normalized_test_embe
                           f"Reconstruction Error={reconstruction_error:.4f} "
                           f"Accuracy Loss={accuracy_loss:.4f}")
 
-    return (reconstruction_errors, accuracy_losses, all_epsilons, all_min_samples_values, all_noise_scale_values)
+    return reconstruction_errors, accuracy_losses, all_epsilons, all_min_samples_values, all_noise_scale_values
