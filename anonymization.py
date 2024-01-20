@@ -86,8 +86,7 @@ def anonymize_embeddings_density_based(embeddings, eps=0.5, min_samples=5, noise
     for label in unique_labels:
         cluster_indices = (cluster_labels == label)
         anonymized_embeddings[cluster_indices] += laplace_noise[cluster_indices]
-
-    return torch.tensor(anonymized_embeddings, dtype=torch.float32, device=device)
+    return anonymized_embeddings
 
 
 def anonymize_embeddings(embeddings, method, eps=None, min_samples=None, noise_scale=None, device="cpu"):

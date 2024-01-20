@@ -90,14 +90,14 @@ def validate(epoch, val_loader, model, criterion, file_path):
         iter_time.update(time.time() - start)
         if idx % 10 == 0:
             print(('Epoch: [{0}][{1}/{2}]\tTime {iter_time.val:.3f} ({iter_time.avg:.3f})\t').
-                  format(epoch, idx, len(val_loader), iter_time=iter_time, loss=losses, top1=acc))
+                  format(epoch+1, idx, len(val_loader)+1, iter_time=iter_time, loss=losses, top1=acc))
 
     cm = cm / cm.sum(1)
     per_cls_acc = cm.diag().detach().numpy().tolist()
 
     for i, acc_i in enumerate(per_cls_acc):
-        print("Accuracy of Class {}: {:.4f}".format(i, acc_i))
+        print("Accuracy of Class {}: {:.4f}".format(i+1, acc_i))
 
-    print("* Prec @1: {top1.avg:.4f}".format(top1=acc))
+    print("* Avg Prec: {top1.avg:.4f}".format(top1=acc))
 
     return acc.avg, cm

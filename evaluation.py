@@ -1,7 +1,11 @@
 # evaluation.py
 
 import torch
-from sklearn.metrics import accuracy_score
+from torch.utils.data import TensorDataset, DataLoader
+
+from anonymization import anonymize_embeddings
+from train import train, validate
+from train_util import adjust_learning_rate
 
 
 def calculate_relative_difference(original_embedding, anonymized_embedding):
@@ -44,31 +48,65 @@ def calculate_mean_relative_difference(original_embeddings, anonymized_embedding
     return mean_relative_differences
 
 
-def evaluate_model(model, test_embeddings, test_labels, device="cpu"):
-    """
-    Evaluate the model on the test set.
+def find_best_parameters(args, normalized_train_embeddings, normalized_test_embeddings, model,
+                         optimizer, criterion, train_labels, test_labels):
+    original_model_accuracy_cifar10 = 0.9893
+    original_model_accuracy_cifar100 = 0.9120
+    reconstruction_errors = []
+    accuracy_losses = []
 
-    Parameters:
-    - model: PyTorch model
-    - test_embeddings: PyTorch tensor or NumPy array, the test set of embeddings
-    - test_labels: PyTorch tensor or NumPy array, the labels corresponding to the test embeddings
+    all_epsilons = []
+    all_min_samples_values = []
+    all_noise_scale_values = []
 
-    Returns:
-    - float: Accuracy of the model on the test set
-    """
-    with torch.no_grad():
-        # Convert to PyTorch tensor if input is NumPy array
-        if not isinstance(test_embeddings, torch.Tensor):
-            test_embeddings = torch.as_tensor(test_embeddings, dtype=torch.float32).to(device)
+    for eps in args.eps_tuning:
+        for min_samples in args.min_samples_tuning:
+            for noise_scale in args.noise_scale_tuning:
+                # Anonymize embeddings using selected method
+                test_anonymized_embeddings = (
+                    anonymize_embeddings(normalized_test_embeddings, args.method, eps=eps, min_samples=min_samples, noise_scale=noise_scale))
+                train_embeddings_anonymized = (
+                    anonymize_embeddings(normalized_train_embeddings, args.method, eps=eps, min_samples=args.min_samples, noise_scale=args.noise_scale))
 
-        model.eval()
-        test_outputs = model(test_embeddings).to(device)
-        _, predicted_labels = torch.max(test_outputs, 1)
+                train_dataset = TensorDataset(torch.from_numpy(train_embeddings_anonymized), torch.from_numpy(train_labels))
+                test_dataset = TensorDataset(torch.from_numpy(test_anonymized_embeddings), torch.from_numpy(test_labels))
 
-        # Convert to NumPy array if output is PyTorch tensor
-        if isinstance(test_labels, torch.Tensor):
-            test_labels = test_labels.cpu().numpy()
+                train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=2)
+                test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, num_workers=2)
+                for epoch in range(args.epochs):
+                    adjust_learning_rate(optimizer, epoch, args)
 
-        accuracy = accuracy_score(test_labels, predicted_labels)
+                    # train loop
+                    train(epoch, train_loader, model, optimizer, criterion)
 
-    return accuracy
+                    # validation loop
+                    acc, cm = validate(epoch, test_loader, model, criterion, args.train_file_path)
+
+
+
+                    # Calculate reconstruction error and accuracy loss
+                    # Convert NumPy arrays to PyTorch tensors
+                    normalized_test_embeddings_tensor = torch.from_numpy(normalized_test_embeddings)
+                    test_anonymized_embeddings_tensor = torch.from_numpy(test_anonymized_embeddings)
+
+                    reconstruction_error = torch.mean(normalized_test_embeddings_tensor - (test_anonymized_embeddings_tensor**2)).item()
+                    if "cifar100" in args.train_file_path:
+                        accuracy_loss = original_model_accuracy_cifar100 - acc
+                    elif "cifar10" in args.train_file_path:
+                        accuracy_loss = original_model_accuracy_cifar10 - acc
+
+                    # Append to lists
+                    reconstruction_errors.append(reconstruction_error)
+                    accuracy_losses.append(accuracy_loss)
+
+                    # Update lists for all parameters
+                    all_epsilons.append(eps)
+                    all_min_samples_values.append(min_samples)
+                    all_noise_scale_values.append(noise_scale)
+
+                    # Print results for the current iteration
+                    print(f"Iteration: Epsilon={eps}, Min Samples={min_samples}, Noise Scale={noise_scale}, "
+                          f"Accuracy={acc * 100:.2f}%,"
+                          f"Reconstruction Error={reconstruction_error:.4f}")
+
+    return (reconstruction_errors, accuracy_losses, all_epsilons, all_min_samples_values, all_noise_scale_values)

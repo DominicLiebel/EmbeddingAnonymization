@@ -16,7 +16,7 @@ network:
   model: SimpleModel # DropoutAndBatchnormModel, Dropoutmodel, SimpleModel
 
 data:
-  save_best: True
+  save_best: False
 
 loss:
   loss_type: CE #CE
@@ -30,3 +30,7 @@ Anonymization:
   eps: 1.2
   min_samples: 3
   noise_scale: 0.1
+
+  eps_tuning: [0.8, 0.9, 1.0, 1.1, 1.2]
+  min_samples_tuning: [3, 4, 5]
+  noise_scale_tuning: [0.1, 0.25, 0.5]
