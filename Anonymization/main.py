@@ -9,7 +9,7 @@ from anonymization import anonymize_embeddings
 from visualization import plot_accuracy_vs_error
 from data_loader import load_npz_files
 from train_util import adjust_learning_rate
-from evaluation import find_best_parameters
+from evaluation import find_best_parameters, check_overlap
 from train import train, validate
 from torch.utils.data import DataLoader, TensorDataset
 from sklearn.preprocessing import StandardScaler
@@ -95,8 +95,8 @@ def main():
         test_dataset = TensorDataset(torch.from_numpy(anonymized_test_embeddings), torch.from_numpy(test_labels))
 
         # Create DataLoader instances
-        train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=2)
-        test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, num_workers=2)
+        train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=8)
+        test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, num_workers=8)
 
         print("Datasets loaded")
 
@@ -131,7 +131,7 @@ def main():
 
         if args.save_best:
             torch.save(best_model.state_dict(), './checkpoints/' + args.model.lower() + '.pth')
-
+        check_overlap(test_embeddings, anonymized_test_embeddings)
 
 if __name__ == "__main__":
     main()
