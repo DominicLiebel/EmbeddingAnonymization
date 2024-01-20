@@ -89,7 +89,7 @@ def find_best_parameters(args, normalized_train_embeddings, normalized_test_embe
                     normalized_test_embeddings_tensor = torch.from_numpy(normalized_test_embeddings)
                     test_anonymized_embeddings_tensor = torch.from_numpy(test_anonymized_embeddings)
 
-                    reconstruction_error = torch.mean(normalized_test_embeddings_tensor - (test_anonymized_embeddings_tensor**2)).item()
+                    reconstruction_error = torch.mean((normalized_test_embeddings_tensor - test_anonymized_embeddings_tensor)**2).item()
                     if "cifar100" in args.train_file_path:
                         accuracy_loss = original_model_accuracy_cifar100 - acc
                     elif "cifar10" in args.train_file_path:
@@ -106,7 +106,8 @@ def find_best_parameters(args, normalized_train_embeddings, normalized_test_embe
 
                     # Print results for the current iteration
                     print(f"Iteration: Epsilon={eps}, Min Samples={min_samples}, Noise Scale={noise_scale}, "
-                          f"Accuracy={acc * 100:.2f}%,"
-                          f"Reconstruction Error={reconstruction_error:.4f}")
+                          f"Accuracy={acc * 100:.2f}%, "
+                          f"Reconstruction Error={reconstruction_error:.4f} "
+                          f"Accuracy Loss={accuracy_loss:.4f}")
 
     return (reconstruction_errors, accuracy_losses, all_epsilons, all_min_samples_values, all_noise_scale_values)
