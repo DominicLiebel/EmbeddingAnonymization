@@ -18,39 +18,6 @@ def plot_accuracy_vs_error(args, reconstruction_errors, accuracy_losses, method_
     - all_min_samples_values (list): List of all min_samples values.
     - all_noise_scale_values (list): List of all noise_scale values.
     """
-    # Plotting for the last combination only
-    plt.figure()
-    plt.plot(reconstruction_errors, accuracy_losses, marker='o', linestyle='', label='All Epochs')
-    plt.scatter(reconstruction_errors[-1], accuracy_losses[-1], color='red', marker='o', label='Last Epoch')
-    plt.xlabel('Reconstruction Error')
-    plt.ylabel('Accuracy Loss')
-    plt.title('Accuracy Loss vs. Reconstruction Error')
-    plt.suptitle(f'Parameters: Method={method_to_test}, Model={args.model}')
-
-    # Add text annotations for the last point with epsilon, min_samples, and noise_scale values
-    error_last = reconstruction_errors[-1]
-    loss_last = accuracy_losses[-1]
-    epsilon_last = all_epsilons[-1]
-    min_samples_last = all_min_samples_values[-1]
-    noise_scale_last = all_noise_scale_values[-1]
-    plt.text(error_last, loss_last, f'({epsilon_last=:.6f}, {min_samples_last=}, {noise_scale_last=:.4f})', fontsize=8, ha='center', va='bottom')
-
-    plt.legend()
-    plt.savefig('output_plot.png')
-    plt.show()
-
-def plot_accuracy_vs_error_every_epoch(args, reconstruction_errors, accuracy_losses, method_to_test, all_epsilons, all_min_samples_values, all_noise_scale_values):
-    """
-    Plot accuracy loss vs. reconstruction error with annotations.
-
-    Parameters:
-    - reconstruction_errors (list): List of reconstruction errors.
-    - accuracy_losses (list): List of accuracy losses.
-    - method_to_test (str): Method being tested.
-    - all_epsilons (list): List of all epsilon values.
-    - all_min_samples_values (list): List of all min_samples values.
-    - all_noise_scale_values (list): List of all noise_scale values.
-    """
     # Plotting for each combination
     plt.figure()
     plt.plot(reconstruction_errors, accuracy_losses, marker='o')
@@ -61,7 +28,7 @@ def plot_accuracy_vs_error_every_epoch(args, reconstruction_errors, accuracy_los
 
     # Add text annotations for each point with epsilon, min_samples, and noise_scale values
     for i, (error, loss, epsilon, min_samples, noise_scale) in enumerate(zip(reconstruction_errors, accuracy_losses, all_epsilons, all_min_samples_values, all_noise_scale_values)):
-        plt.text(error, loss, f'({epsilon=:.6f}, {min_samples=}, {noise_scale=:.4f})', fontsize=8, ha='center', va='bottom')
+        plt.text(error, loss, f'({epsilon=:.6f}, {min_samples=}, {noise_scale=:.4f})', fontsize=4, ha='center', va='bottom')
     plt.savefig('output_plot.png')
     plt.show()
 
