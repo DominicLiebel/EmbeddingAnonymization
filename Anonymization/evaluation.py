@@ -1,21 +1,57 @@
 # evaluation.py
 
 import torch
+from torch.utils.data import TensorDataset, DataLoader
+
 from anonymization import anonymize_embeddings
-from model import OptimizedModel
-from train_util import train_and_evaluate
-import numpy as np
+from train import train, validate
+from train_util import adjust_learning_rate
 
 
-def find_best_parameters(original_model_accuracy, normalized_train_embeddings, normalized_test_embeddings,
-                         original_train_labels, original_test_labels, device, method,
-                         epsilons, min_samples_values, noise_scale_values):
-    best_epsilon = None
-    best_min_samples = None
-    best_noise_scale = None
-    best_accuracy = 0.0
+def calculate_relative_difference(original_embedding, anonymized_embedding):
+    """
+    Calculate the relative difference between original and anonymized embeddings.
 
-    best_reconstruction_error = float('inf')
+    Parameters:
+    - original_embedding: float, the original embedding value
+    - anonymized_embedding: float, the anonymized embedding value
+
+    Returns:
+    - float: Relative difference as a percentage
+    """
+    if torch.any(original_embedding == 0):
+        raise ValueError("Cannot calculate relative difference when the original embedding is 0.")
+
+    difference = anonymized_embedding - original_embedding
+    relative_difference = (difference / abs(original_embedding)) * 100.0
+
+    return relative_difference
+
+
+def calculate_mean_relative_difference(original_embeddings, anonymized_embeddings):
+    """
+    Calculate the mean relative difference for each image.
+
+    Parameters:
+    - original_embeddings: list of original embedding values
+    - anonymized_embeddings: list of anonymized embedding values
+
+    Returns:
+    - list of floats: Mean relative difference for each image
+    """
+    mean_relative_differences = []
+    for original, anonymized in zip(original_embeddings, anonymized_embeddings):
+        relative_difference = calculate_relative_difference(original, anonymized)
+        mean_relative_difference = torch.mean(relative_difference).item()
+        mean_relative_differences.append(mean_relative_difference)
+
+    return mean_relative_differences
+
+
+def find_best_parameters(args, normalized_train_embeddings, normalized_test_embeddings, model,
+                         optimizer, criterion, train_labels, test_labels):
+    original_model_accuracy_cifar10 = 0.9893
+    original_model_accuracy_cifar100 = 0.9120
     reconstruction_errors = []
     accuracy_losses = []
 
@@ -23,57 +59,50 @@ def find_best_parameters(original_model_accuracy, normalized_train_embeddings, n
     all_min_samples_values = []
     all_noise_scale_values = []
 
-    for eps in epsilons:
-        for min_samples in min_samples_values:
-            for noise_scale in noise_scale_values:
+    for eps in args.eps_tuning:
+        for min_samples in args.min_samples_tuning:
+            for noise_scale in args.noise_scale_tuning:
                 # Anonymize embeddings using selected method
                 test_anonymized_embeddings = (
-                    anonymize_embeddings(normalized_test_embeddings, method,
-                                         eps=eps, min_samples=min_samples, noise_scale=noise_scale, device=device))
+                    anonymize_embeddings(normalized_test_embeddings, args.method, eps=eps, min_samples=min_samples, noise_scale=noise_scale))
                 train_embeddings_anonymized = (
-                    anonymize_embeddings(normalized_train_embeddings, method,
-                                         eps=eps, min_samples=min_samples, noise_scale=noise_scale, device=device))
+                    anonymize_embeddings(normalized_train_embeddings, args.method, eps=eps, min_samples=args.min_samples, noise_scale=args.noise_scale))
 
-                test_anonymized_embeddings = test_anonymized_embeddings.to(device)
-                train_embeddings_anonymized = train_embeddings_anonymized.to(device)
-                normalized_test_embeddings = normalized_test_embeddings.to(device)
+                train_dataset = TensorDataset(torch.from_numpy(train_embeddings_anonymized), torch.from_numpy(train_labels))
+                test_dataset = TensorDataset(torch.from_numpy(test_anonymized_embeddings), torch.from_numpy(test_labels))
 
-                # Train and evaluate the model on anonymized data
-                anonymized_model = OptimizedModel(input_size=test_anonymized_embeddings.shape[1],
-                                                  output_size=len(np.unique(original_test_labels))).to(device)
-                anonymized_model_accuracy = train_and_evaluate(
-                    anonymized_model,
-                    train_embeddings_anonymized,
-                    original_train_labels,
-                    test_anonymized_embeddings,
-                    original_test_labels
-                )
+                train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=2)
+                test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, num_workers=2)
+                for epoch in range(args.epochs):
+                    adjust_learning_rate(optimizer, epoch, args)
 
-                # Calculate reconstruction error and accuracy loss
-                reconstruction_error = torch.mean((normalized_test_embeddings - test_anonymized_embeddings)**2).item()
-                accuracy_loss = original_model_accuracy - anonymized_model_accuracy
+                    # train loop
+                    train(epoch, train_loader, model, optimizer, criterion)
 
-                # Append to lists
-                reconstruction_errors.append(reconstruction_error)
-                accuracy_losses.append(accuracy_loss)
+                    # validation loop
+                    acc, cm = validate(epoch, test_loader, model, criterion, args.train_file_path)
 
-                # Update the best parameters based on accuracy or reconstruction error
-                if anonymized_model_accuracy > best_accuracy:
-                    best_accuracy = anonymized_model_accuracy
-                    best_epsilon = eps
-                    best_min_samples = min_samples
-                    best_noise_scale = noise_scale
-                    best_reconstruction_error = reconstruction_error
 
-                # Update lists for all parameters
-                all_epsilons.append(eps)
-                all_min_samples_values.append(min_samples)
-                all_noise_scale_values.append(noise_scale)
 
-                # Print results for the current iteration
-                print(f"Iteration: Epsilon={eps}, Min Samples={min_samples}, Noise Scale={noise_scale}, "
-                      f"Accuracy={anonymized_model_accuracy * 100:.2f}%,"
-                      f"Reconstruction Error={reconstruction_error:.4f}")
+                    # Calculate reconstruction error and accuracy loss
+                    reconstruction_error = torch.mean((normalized_test_embeddings - test_anonymized_embeddings)**2).item()
+                    if "cifar100" in args.train_file_path:
+                        accuracy_loss = original_model_accuracy_cifar100 - acc
+                    elif "cifar10" in args.train_file_path:
+                        accuracy_loss = original_model_accuracy_cifar10 - acc
 
-    return (best_epsilon, best_min_samples, best_noise_scale, best_accuracy, best_reconstruction_error,
-            reconstruction_errors, accuracy_losses, all_epsilons, all_min_samples_values, all_noise_scale_values)
+                    # Append to lists
+                    reconstruction_errors.append(reconstruction_error)
+                    accuracy_losses.append(accuracy_loss)
+
+                    # Update lists for all parameters
+                    all_epsilons.append(eps)
+                    all_min_samples_values.append(min_samples)
+                    all_noise_scale_values.append(noise_scale)
+
+                    # Print results for the current iteration
+                    print(f"Iteration: Epsilon={eps}, Min Samples={min_samples}, Noise Scale={noise_scale}, "
+                          f"Accuracy={acc * 100:.2f}%,"
+                          f"Reconstruction Error={reconstruction_error:.4f}")
+
+    return (reconstruction_errors, accuracy_losses, all_epsilons, all_min_samples_values, all_noise_scale_values)

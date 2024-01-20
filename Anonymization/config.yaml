@@ -1,0 +1,36 @@
+# config.yaml
+
+Train:
+  tuning: True #True for hyperparamter training, false for single run-through
+  batch_size: 128
+  learning_rate: 0.001
+  reg: 0.0005
+  epochs: 20
+  steps: [5, 15]
+  warmup: 2
+  momentum: 0.9
+  dropout_rate: 0.5
+  optimizer: Adam #Adam, SGD
+
+network:
+  model: SimpleModel # DropoutAndBatchnormModel, Dropoutmodel, SimpleModel
+
+data:
+  save_best: False
+
+loss:
+  loss_type: CE #CE
+
+file_paths:
+  train_file_path: train_cifar100.npz
+  test_file_path: test_cifar100.npz
+
+Anonymization:
+  method: density_based #density_based, laplace, dp, hasing, pca, premutation, random
+  eps: 1.2
+  min_samples: 3
+  noise_scale: 0.1
+
+  eps_tuning: [0.8, 0.9, 1.0, 1.1, 1.2]
+  min_samples_tuning: [3, 4, 5]
+  noise_scale_tuning: [0.1, 0.25, 0.5]
