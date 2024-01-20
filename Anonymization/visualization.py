@@ -28,7 +28,7 @@ def plot_accuracy_vs_error(args, reconstruction_errors, accuracy_losses, method_
 
     # Add text annotations for each point with epsilon, min_samples, and noise_scale values
     for i, (error, loss, epsilon, min_samples, noise_scale) in enumerate(zip(reconstruction_errors, accuracy_losses, all_epsilons, all_min_samples_values, all_noise_scale_values)):
-        plt.text(error, loss, f'({epsilon=:.6f}, {min_samples=}, {noise_scale=:.4f})', fontsize=8, ha='middle', va='bottom')
+        plt.text(error, loss, f'({epsilon=:.6f}, {min_samples=}, {noise_scale=:.4f})', fontsize=8, ha='center', va='bottom')
 
     plt.show()
 
