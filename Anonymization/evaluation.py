@@ -7,6 +7,32 @@ from anonymization import anonymize_embeddings
 from train import train, validate
 from train_util import adjust_learning_rate
 
+def check_overlap(original_embeddings, anonymized_embeddings):
+    """
+    Check for overlap between original and anonymized embeddings.
+
+    Parameters:
+    - original_embeddings: NumPy array or PyTorch tensor, original embeddings
+    - anonymized_embeddings: NumPy array or PyTorch tensor, anonymized embeddings
+
+    Returns:
+    - bool, True if there is overlap, False otherwise
+    """
+    # Convert PyTorch tensors to NumPy arrays if needed
+    if isinstance(original_embeddings, torch.Tensor):
+        original_embeddings = original_embeddings.numpy()
+    if isinstance(anonymized_embeddings, torch.Tensor):
+        anonymized_embeddings = anonymized_embeddings.numpy()
+
+    # Convert to sets for efficient overlap check
+    original_set = set(map(tuple, original_embeddings))
+    anonymized_set = set(map(tuple, anonymized_embeddings))
+
+    # Check for overlap
+    overlap = bool(original_set.intersection(anonymized_set))
+
+    return overlap
+
 
 def calculate_relative_difference(original_embedding, anonymized_embedding):
     """
@@ -104,10 +130,16 @@ def find_best_parameters(args, normalized_train_embeddings, normalized_test_embe
                     all_min_samples_values.append(min_samples)
                     all_noise_scale_values.append(noise_scale)
 
+                    overlap = check_overlap(normalized_test_embeddings, test_anonymized_embeddings)
+
                     # Print results for the current iteration
                     print(f"Iteration: Epsilon={eps}, Min Samples={min_samples}, Noise Scale={noise_scale}, "
                           f"Accuracy={acc * 100:.2f}%, "
                           f"Reconstruction Error={reconstruction_error:.4f} "
-                          f"Accuracy Loss={accuracy_loss:.4f}")
+                          f"Accuracy Loss={accuracy_loss:.4f} "
+                          f"Overlap={overlap}")
 
     return reconstruction_errors, accuracy_losses, all_epsilons, all_min_samples_values, all_noise_scale_values
+
+#%%
+
