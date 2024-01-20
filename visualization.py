@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
 from sklearn.decomposition import PCA
 
+
 def visualize_clusters(embeddings, labels, method='t-SNE', n_components=2):
     if method == 't-SNE':
         tsne = TSNE(n_components=n_components, random_state=42)
@@ -12,7 +13,6 @@ def visualize_clusters(embeddings, labels, method='t-SNE', n_components=2):
         reduced_embeddings = pca.fit_transform(embeddings)
     else:
         raise ValueError(f"Unsupported visualization method: {method}")
-
 
     plt.scatter(reduced_embeddings[:, 0], reduced_embeddings[:, 1], c=labels, cmap='viridis', s=20)
     plt.title(f'Clusters after Anonymization ({method})')

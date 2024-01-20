@@ -1,78 +1,74 @@
 # evaluation.py
 
 import torch
-from anonymization import anonymize_embeddings
-from model import OptimizedModel
-from train_util import train_and_evaluate
-import numpy as np
+from sklearn.metrics import accuracy_score
 
 
-def find_best_parameters(original_model_accuracy, normalized_train_embeddings, normalized_test_embeddings,
-                         original_train_labels, original_test_labels, device, method,
-                         epsilons, min_samples_values, noise_scale_values):
-    best_epsilon = None
-    best_min_samples = None
-    best_noise_scale = None
-    best_accuracy = 0.0
-    best_reconstruction_error = float('inf')
-    reconstruction_errors = []
-    accuracy_losses = []
+def calculate_relative_difference(original_embedding, anonymized_embedding):
+    """
+    Calculate the relative difference between original and anonymized embeddings.
 
-    all_epsilons = []
-    all_min_samples_values = []
-    all_noise_scale_values = []
+    Parameters:
+    - original_embedding: float, the original embedding value
+    - anonymized_embedding: float, the anonymized embedding value
 
-    for eps in epsilons:
-        for min_samples in min_samples_values:
-            for noise_scale in noise_scale_values:
-                # Anonymize embeddings using selected method
-                test_anonymized_embeddings = (
-                    anonymize_embeddings(normalized_test_embeddings, method,
-                                         eps=eps, min_samples=min_samples, noise_scale=noise_scale, device=device))
-                train_embeddings_anonymized = (
-                    anonymize_embeddings(normalized_train_embeddings, method,
-                                         eps=eps, min_samples=min_samples, noise_scale=noise_scale, device=device))
+    Returns:
+    - float: Relative difference as a percentage
+    """
+    if torch.any(original_embedding == 0):
+        raise ValueError("Cannot calculate relative difference when the original embedding is 0.")
 
-                test_anonymized_embeddings = test_anonymized_embeddings.to(device)
-                train_embeddings_anonymized = train_embeddings_anonymized.to(device)
-                normalized_test_embeddings = normalized_test_embeddings.to(device)
+    difference = anonymized_embedding - original_embedding
+    relative_difference = (difference / abs(original_embedding)) * 100.0
 
-                # Train and evaluate the model on anonymized data
-                anonymized_model = OptimizedModel(input_size=test_anonymized_embeddings.shape[1],
-                                                  output_size=len(np.unique(original_test_labels))).to(device)
-                anonymized_model_accuracy = train_and_evaluate(
-                    anonymized_model,
-                    train_embeddings_anonymized,
-                    original_train_labels,
-                    test_anonymized_embeddings,
-                    original_test_labels
-                )
+    return relative_difference
 
-                # Calculate reconstruction error and accuracy loss
-                reconstruction_error = torch.mean((normalized_test_embeddings - test_anonymized_embeddings)**2).item()
-                accuracy_loss = original_model_accuracy - anonymized_model_accuracy
 
-                # Append to lists
-                reconstruction_errors.append(reconstruction_error)
-                accuracy_losses.append(accuracy_loss)
+def calculate_mean_relative_difference(original_embeddings, anonymized_embeddings):
+    """
+    Calculate the mean relative difference for each image.
 
-                # Update the best parameters based on accuracy or reconstruction error
-                if anonymized_model_accuracy > best_accuracy:
-                    best_accuracy = anonymized_model_accuracy
-                    best_epsilon = eps
-                    best_min_samples = min_samples
-                    best_noise_scale = noise_scale
-                    best_reconstruction_error = reconstruction_error
+    Parameters:
+    - original_embeddings: list of original embedding values
+    - anonymized_embeddings: list of anonymized embedding values
 
-                # Update lists for all parameters
-                all_epsilons.append(eps)
-                all_min_samples_values.append(min_samples)
-                all_noise_scale_values.append(noise_scale)
+    Returns:
+    - list of floats: Mean relative difference for each image
+    """
+    mean_relative_differences = []
+    for original, anonymized in zip(original_embeddings, anonymized_embeddings):
+        relative_difference = calculate_relative_difference(original, anonymized)
+        mean_relative_difference = torch.mean(relative_difference).item()
+        mean_relative_differences.append(mean_relative_difference)
 
-                # Print results for the current iteration
-                print(f"Iteration: Epsilon={eps}, Min Samples={min_samples}, Noise Scale={noise_scale}, "
-                      f"Accuracy={anonymized_model_accuracy * 100:.2f}%,"
-                      f"Reconstruction Error={reconstruction_error:.4f}")
+    return mean_relative_differences
 
-    return (best_epsilon, best_min_samples, best_noise_scale, best_accuracy, best_reconstruction_error,
-            reconstruction_errors, accuracy_losses, all_epsilons, all_min_samples_values, all_noise_scale_values)
+
+def evaluate_model(model, test_embeddings, test_labels, device="cpu"):
+    """
+    Evaluate the model on the test set.
+
+    Parameters:
+    - model: PyTorch model
+    - test_embeddings: PyTorch tensor or NumPy array, the test set of embeddings
+    - test_labels: PyTorch tensor or NumPy array, the labels corresponding to the test embeddings
+
+    Returns:
+    - float: Accuracy of the model on the test set
+    """
+    with torch.no_grad():
+        # Convert to PyTorch tensor if input is NumPy array
+        if not isinstance(test_embeddings, torch.Tensor):
+            test_embeddings = torch.as_tensor(test_embeddings, dtype=torch.float32).to(device)
+
+        model.eval()
+        test_outputs = model(test_embeddings).to(device)
+        _, predicted_labels = torch.max(test_outputs, 1)
+
+        # Convert to NumPy array if output is PyTorch tensor
+        if isinstance(test_labels, torch.Tensor):
+            test_labels = test_labels.cpu().numpy()
+
+        accuracy = accuracy_score(test_labels, predicted_labels)
+
+    return accuracy
