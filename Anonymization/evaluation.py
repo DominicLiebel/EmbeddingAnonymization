@@ -90,9 +90,9 @@ def find_best_parameters(args, normalized_train_embeddings, normalized_test_embe
             for noise_scale in args.noise_scale_tuning:
                 # Anonymize embeddings using selected method
                 test_anonymized_embeddings = (
-                    anonymize_embeddings(normalized_test_embeddings, args))
+                    anonymize_embeddings(normalized_test_embeddings, args.method, eps=eps, min_samples=min_samples, noise_scale=noise_scale))
                 train_embeddings_anonymized = (
-                    anonymize_embeddings(normalized_train_embeddings, args))
+                    anonymize_embeddings(normalized_train_embeddings, args.method, eps=eps, min_samples=args.min_samples, noise_scale=args.noise_scale))
 
                 train_dataset = TensorDataset(torch.from_numpy(train_embeddings_anonymized), torch.from_numpy(train_labels))
                 test_dataset = TensorDataset(torch.from_numpy(test_anonymized_embeddings), torch.from_numpy(test_labels))
@@ -107,8 +107,6 @@ def find_best_parameters(args, normalized_train_embeddings, normalized_test_embe
 
                     # validation loop
                     acc, cm = validate(epoch, test_loader, model, criterion, args.train_file_path)
-
-
 
                     # Calculate reconstruction error and accuracy loss
                     # Convert NumPy arrays to PyTorch tensors
@@ -130,16 +128,13 @@ def find_best_parameters(args, normalized_train_embeddings, normalized_test_embe
                     all_min_samples_values.append(min_samples)
                     all_noise_scale_values.append(noise_scale)
 
-                    overlap = check_overlap(normalized_test_embeddings, test_anonymized_embeddings)
+                    has_overlap = check_overlap(normalized_test_embeddings, test_anonymized_embeddings)
 
                     # Print results for the current iteration
                     print(f"Iteration: Epsilon={eps}, Min Samples={min_samples}, Noise Scale={noise_scale}, "
                           f"Accuracy={acc * 100:.2f}%, "
                           f"Reconstruction Error={reconstruction_error:.4f} "
                           f"Accuracy Loss={accuracy_loss:.4f} "
-                          f"Overlap={overlap}")
+                          f"Overlap={has_overlap}")
 
-    return reconstruction_errors, accuracy_losses, all_epsilons, all_min_samples_values, all_noise_scale_values
-
-#%%
-
+    return (reconstruction_errors, accuracy_losses, all_epsilons, all_min_samples_values, all_noise_scale_values)

@@ -6,10 +6,10 @@ import argparse
 import yaml
 from model import DropoutModel, DropoutAndBatchnormModel, SimpleModel
 from anonymization import anonymize_embeddings
-from visualization import plot_accuracy_vs_error
+from visualization import plot_accuracy_vs_error, plot_accuracy_vs_error_every_epoch
 from data_loader import load_npz_files
 from train_util import adjust_learning_rate
-from evaluation import find_best_parameters, check_overlap
+from evaluation import find_best_parameters
 from train import train, validate
 from torch.utils.data import DataLoader, TensorDataset
 from sklearn.preprocessing import StandardScaler
@@ -79,13 +79,16 @@ def main():
 
     if args.tuning:
         reconstruction_errors, accuracy_losses, all_epsilons, all_min_samples_values, all_noise_scale_values = find_best_parameters(args, normalized_train_embeddings, normalized_test_embeddings, model,
-                             optimizer, criterion, train_labels, test_labels)
-        plot_accuracy_vs_error(args, reconstruction_errors, accuracy_losses, args.method, all_epsilons, all_min_samples_values, all_noise_scale_values)
+                                                                                                                                    optimizer, criterion, train_labels, test_labels)
+        plot_accuracy_vs_error_every_epoch(args, reconstruction_errors, accuracy_losses, args.method, all_epsilons, all_min_samples_values, all_noise_scale_values)
+
 
     else:
         # Anonymize train and test embeddings
-        anonymized_train_embeddings = anonymize_embeddings(normalized_train_embeddings, args)
-        anonymized_test_embeddings = anonymize_embeddings(normalized_test_embeddings, args)
+        anonymized_train_embeddings = anonymize_embeddings(normalized_train_embeddings, method=args.method,
+                                                           eps=args.eps, min_samples=args.min_samples, noise_scale=args.noise_scale)
+        anonymized_test_embeddings = anonymize_embeddings(normalized_test_embeddings, method=args.method,
+                                                          eps=args.eps, min_samples=args.min_samples, noise_scale=args.noise_scale)
 
 
         print("Anonymized embeddings")
@@ -95,8 +98,8 @@ def main():
         test_dataset = TensorDataset(torch.from_numpy(anonymized_test_embeddings), torch.from_numpy(test_labels))
 
         # Create DataLoader instances
-        train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=8)
-        test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, num_workers=8)
+        train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=2)
+        test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, num_workers=2)
 
         print("Datasets loaded")
 
@@ -131,7 +134,7 @@ def main():
 
         if args.save_best:
             torch.save(best_model.state_dict(), './checkpoints/' + args.model.lower() + '.pth')
-        check_overlap(test_embeddings, anonymized_test_embeddings)
+
 
 if __name__ == "__main__":
     main()

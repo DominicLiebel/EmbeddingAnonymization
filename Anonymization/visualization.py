@@ -18,17 +18,40 @@ def plot_accuracy_vs_error(args, reconstruction_errors, accuracy_losses, method_
     - all_min_samples_values (list): List of all min_samples values.
     - all_noise_scale_values (list): List of all noise_scale values.
     """
+    plt.figure()
+    plt.plot(reconstruction_errors, accuracy_losses, marker='o', linestyle='', label='All Epochs')
+    plt.xlabel('Reconstruction Error')
+    plt.ylabel('Accuracy Loss')
+    plt.title('Accuracy Loss vs. Reconstruction Error')
+    plt.suptitle(f'Parameters: {args.model}: {method_to_test}, {args.optimizer}, {args.loss_type}')
+
+    plt.legend()
+    plt.savefig('output_plot.png')
+    plt.show()
+
+def plot_accuracy_vs_error_every_epoch(args, reconstruction_errors, accuracy_losses, method_to_test, all_epsilons, all_min_samples_values, all_noise_scale_values):
+    """
+    Plot accuracy loss vs. reconstruction error with annotations.
+
+    Parameters:
+    - reconstruction_errors (list): List of reconstruction errors.
+    - accuracy_losses (list): List of accuracy losses.
+    - method_to_test (str): Method being tested.
+    - all_epsilons (list): List of all epsilon values.
+    - all_min_samples_values (list): List of all min_samples values.
+    - all_noise_scale_values (list): List of all noise_scale values.
+    """
     # Plotting for each combination
     plt.figure()
     plt.plot(reconstruction_errors, accuracy_losses, marker='o')
     plt.xlabel('Reconstruction Error')
     plt.ylabel('Accuracy Loss')
     plt.title('Accuracy Loss vs. Reconstruction Error')
-    plt.suptitle(f'Parameters: Method={method_to_test}, Model={args.model}')
+    plt.suptitle(f'Parameters: {args.model}: {method_to_test}, {args.optimizer}, {args.loss_type}')
 
     # Add text annotations for each point with epsilon, min_samples, and noise_scale values
     for i, (error, loss, epsilon, min_samples, noise_scale) in enumerate(zip(reconstruction_errors, accuracy_losses, all_epsilons, all_min_samples_values, all_noise_scale_values)):
-        plt.text(error, loss, f'({epsilon=:.6f}, {min_samples=}, {noise_scale=:.4f})', fontsize=4, ha='center', va='bottom')
+        plt.text(error, loss, f'({epsilon=:.2f}, {min_samples=}, {noise_scale=:.2f})', fontsize=6, ha='center', va='bottom')
     plt.savefig('output_plot.png')
     plt.show()
 
