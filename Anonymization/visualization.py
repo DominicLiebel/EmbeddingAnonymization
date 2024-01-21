@@ -70,7 +70,7 @@ def visualize_clusters(embeddings, labels, method='t-SNE', n_components=2):
     plt.ylabel(f'{method} Component 2')
     plt.show()
 
-def visualize_clusters_with_anonymized(test_embeddings, anonymized_embeddings, cluster_edges, title='Embeddings Visualization with Clusters'):
+def visualize_clusters_with_anonymized_2d(test_embeddings, anonymized_embeddings, cluster_edges, title='Embeddings Visualization with Clusters'):
     plt.figure(figsize=(10, 8))
 
     # Plot the original test embeddings
@@ -87,10 +87,38 @@ def visualize_clusters_with_anonymized(test_embeddings, anonymized_embeddings, c
     anonymized_embeddings_np = np.array(anonymized_embeddings)
 
     # Plot the anonymized embeddings within the clusters
-    plt.scatter(anonymized_embeddings_np[:, 0], anonymized_embeddings_np[:, 1], c='green', s=10, label='Anonymized Embeddings')
+    plt.scatter(anonymized_embeddings_np[:, 0], anonymized_embeddings_np[:, 1], c='green', s=20, label='Anonymized Embeddings')
 
     plt.title(title)
     plt.xlabel('Feature 1')
     plt.ylabel('Feature 2')
     plt.legend()
+    plt.show()
+
+def visualize_clusters_with_anonymized_3d(test_embeddings, anonymized_embeddings, cluster_edges, title='Embeddings Visualization with Clusters'):
+    fig = plt.figure(figsize=(12, 10))
+    ax = fig.add_subplot(111, projection='3d')
+
+    # Plot the original test embeddings
+    ax.scatter(test_embeddings[:, 0], test_embeddings[:, 1], test_embeddings[:, 2], c='blue', label='Original Test Embeddings')
+
+    # Plot the cluster edges
+    for cluster_edge in cluster_edges:
+        min_values, max_values = cluster_edge
+        ax.plot([min_values[0], max_values[0], max_values[0], min_values[0], min_values[0]],
+                [min_values[1], min_values[1], max_values[1], max_values[1], min_values[1]],
+                [min_values[2], min_values[2], max_values[2], max_values[2], min_values[2]],
+                color='red', linestyle='dashed', linewidth=2, alpha=0.7)
+
+    # Convert anonymized_embeddings to a NumPy array
+    anonymized_embeddings_np = np.array(anonymized_embeddings)
+
+    # Plot the anonymized embeddings within the clusters
+    ax.scatter(anonymized_embeddings_np[:, 0], anonymized_embeddings_np[:, 1], anonymized_embeddings_np[:, 2], c='green', s=20, label='Anonymized Embeddings')
+
+    ax.set_title(title)
+    ax.set_xlabel('Feature 1')
+    ax.set_ylabel('Feature 2')
+    ax.set_zlabel('Feature 3')
+    ax.legend()
     plt.show()

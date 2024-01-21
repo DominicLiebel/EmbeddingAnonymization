@@ -4,7 +4,7 @@ import torch
 from torch.utils.data import TensorDataset, DataLoader
 from train import train, validate
 from train_util import adjust_learning_rate
-from visualization import visualize_clusters_with_anonymized
+from visualization import visualize_clusters_with_anonymized_3d
 from anonymization import anonymize_embeddings_cluster_creator, anonymize_embeddings_cluster
 
 # Set seeds for reproducibility
@@ -104,15 +104,11 @@ def find_best_parameters(args, train_embeddings, test_embeddings, model,
                     print(f"Number of clusters in testing set: {len(cluster_edges_train)}")
 
                     # Visualization code
-                    visualize_clusters_with_anonymized(test_embeddings, test_embeddings_anonymized, cluster_edges_train, title='Embeddings Visualization with Clusters')
+                    visualize_clusters_with_anonymized_3d(test_embeddings, test_embeddings_anonymized, cluster_edges_train, title='Embeddings Visualization with Clusters before Training')
 
                     #TODO: Change visualization to color anonymized dots in a cluster green and dots outside in red
-                    print(type(train_embeddings_anonymized), train_embeddings_anonymized.size(0)) #<class 'torch.Tensor'> 76420
-                    print(type(train_labels),train_labels.size(0)) #<class 'torch.Tensor'> 50000
-                    print(type(test_embeddings_anonymized),test_embeddings_anonymized.size(0)) #<class 'torch.Tensor'> 74788
-                    print(type(test_labels),test_labels.size(0)) #<class 'torch.Tensor'> 10000
 
-                    #TODO: Wrong sizes
+                    #TODO: Wrong sizes when cluster is 1 (low EPS, limit I found was approx. >5
                     train_dataset = TensorDataset(train_embeddings_anonymized, train_labels)
                     test_dataset = TensorDataset(test_embeddings_anonymized, test_labels)
                     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=2)
@@ -128,10 +124,8 @@ def find_best_parameters(args, train_embeddings, test_embeddings, model,
 
                         # Calculate reconstruction error and accuracy loss
                         # Convert NumPy arrays to PyTorch tensors
-                        normalized_test_embeddings_tensor = torch.from_numpy(test_embeddings)
-                        test_anonymized_embeddings_tensor = torch.from_numpy(test_embeddings_anonymized)
 
-                        reconstruction_error = torch.mean((normalized_test_embeddings_tensor - test_anonymized_embeddings_tensor)**2).item()
+                        reconstruction_error = torch.mean((test_embeddings - test_embeddings_anonymized)**2).item()
                         if "cifar100" in args.train_file_path:
                             accuracy_loss = original_model_accuracy_cifar100 - acc
                         elif "cifar10" in args.train_file_path:
@@ -154,5 +148,7 @@ def find_best_parameters(args, train_embeddings, test_embeddings, model,
                               f"Reconstruction Error={reconstruction_error:.4f} "
                               f"Accuracy Loss={accuracy_loss:.4f} "
                               f"Overlap={has_overlap}")
+                    visualize_clusters_with_anonymized_3d(test_embeddings, test_embeddings_anonymized, cluster_edges_train, title='Embeddings Visualization with Clusters after Training')
+
 
         return (reconstruction_errors, accuracy_losses, all_epsilons, all_min_samples_values, all_noise_scale_values)

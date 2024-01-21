@@ -33,6 +33,6 @@ Anonymization:
   noise_scale: 0.5
 
 Anonymization_tuning:
-  eps_tuning: [20, 10, 5]
-  min_samples_tuning: [5, 10]
+  eps_tuning: [20] #Approx over 5 and under 40
+  min_samples_tuning: [5] #Approx under 100 and over 5
   noise_scale_tuning: [0.00]

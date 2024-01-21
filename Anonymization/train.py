@@ -91,9 +91,9 @@ def validate(epoch, val_loader, model, criterion, file_path):
         acc.update(batch_acc, out.shape[0])
 
         iter_time.update(time.time() - start)
-        if idx % 10 == 0:
-            print(('Epoch: [{0}][{1}/{2}]\tTime {iter_time.val:.3f} ({iter_time.avg:.3f})\t').
-                  format(epoch+1, idx, len(val_loader)+1, iter_time=iter_time, loss=losses, top1=acc))
+        #if idx % 10 == 0:
+            #print(('Epoch: [{0}][{1}/{2}]\tTime {iter_time.val:.3f} ({iter_time.avg:.3f})\t').
+                  #format(epoch+1, idx, len(val_loader)+1, iter_time=iter_time, loss=losses, top1=acc))
 
     cm = cm / cm.sum(1)
     per_cls_acc = cm.diag().detach().numpy().tolist()
