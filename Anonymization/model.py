@@ -66,3 +66,4 @@ class SimpleModel(torch.nn.Module):
         x = self.relu2(x)
         x = self.fc3(x)
         return x
+
