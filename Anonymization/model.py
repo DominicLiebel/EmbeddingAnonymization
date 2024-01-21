@@ -50,6 +50,7 @@ class DropoutAndBatchnormModel(nn.Module):
         x = self.fc3(x)
         return x
 
+
 class SimpleModel(torch.nn.Module):
     def __init__(self, input_size, output_size):
         super(SimpleModel, self).__init__()
@@ -66,4 +67,3 @@ class SimpleModel(torch.nn.Module):
         x = self.relu2(x)
         x = self.fc3(x)
         return x
-

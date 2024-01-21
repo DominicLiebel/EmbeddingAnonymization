@@ -12,7 +12,7 @@ def anonymize_embeddings_random(embeddings, noise_factor=0.1):
     return anonymized_embeddings
 
 
-def anonymize_embeddings_laplace(embeddings, epsilon=0.1, device="cpu"):
+def anonymize_embeddings_laplace(embeddings, noise_scale=0.1):
     """
     Anonymize embeddings using Laplace noise.
 
@@ -24,8 +24,8 @@ def anonymize_embeddings_laplace(embeddings, epsilon=0.1, device="cpu"):
     Returns:
     - PyTorch tensor, anonymized embeddings
     """
-    laplace_noise = torch.tensor(np.random.laplace(scale=epsilon, size=embeddings.shape),
-                                 dtype=torch.float32, device=device)
+    laplace_noise = torch.tensor(np.random.laplace(scale=noise_scale, size=embeddings.shape),
+                                 dtype=torch.float32)
     anonymized_embeddings = embeddings + laplace_noise
     return anonymized_embeddings
 
@@ -95,5 +95,9 @@ def anonymize_embeddings(embeddings, method, eps=None, min_samples=None, noise_s
                                                   noise_scale=noise_scale, device=device)
     elif method == 'dp':
         return anonymize_embeddings_dp(embeddings, epsilon=eps)
+    elif method == 'laplace':
+        return anonymize_embeddings_laplace(embeddings, noise_scale=noise_scale)
+    elif method == 'None':
+        return embeddings
     else:
         raise ValueError("Unsupported anonymization method")
