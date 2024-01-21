@@ -104,7 +104,7 @@ def find_best_parameters(args, train_embeddings, test_embeddings, model,
                     print(f"Number of clusters in testing set: {len(cluster_edges_train)}")
 
                     # Visualization code
-                    #visualize_clusters_with_anonymized(test_embeddings, test_embeddings_anonymized, cluster_edges_train, title='Embeddings Visualization with Clusters')
+                    visualize_clusters_with_anonymized(test_embeddings, test_embeddings_anonymized, cluster_edges_train, title='Embeddings Visualization with Clusters')
 
                     #TODO: Change visualization to color anonymized dots in a cluster green and dots outside in red
                     print(type(train_embeddings_anonymized), train_embeddings_anonymized.size(0)) #<class 'torch.Tensor'> 76420

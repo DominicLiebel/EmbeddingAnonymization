@@ -10,6 +10,7 @@ from sklearn.preprocessing import StandardScaler
 torch.manual_seed(42)
 np.random.seed(42)
 
+#TODO: https://stackoverflow.com/questions/55266154/pytorch-preferred-way-to-copy-a-tensor
 
 def anonymize_embeddings_random(embeddings, noise_factor=0.1):
     anonymized_embeddings = noise_factor * torch.randn_like(embeddings)
@@ -103,6 +104,8 @@ def anonymize_embeddings_cluster_creator(train_embeddings, eps, min_samples):
     return cluster_edges
 
 
+#TODO: Add kNN anonymization method
+
 def anonymize_embeddings_cluster(cluster_edges, embeddings, noise_scale):
     anonymized_embeddings = []
     found_count = 0  # Counter for embeddings not found in any cluster
@@ -123,15 +126,16 @@ def anonymize_embeddings_cluster(cluster_edges, embeddings, noise_scale):
                 centroid = (min_values + max_values) / 2
                 anonymized_embeddings.append(centroid)
                 found_count += 1
-            else:
-                # Find the nearest cluster centroid
-                nearest_cluster_idx = find_nearest_cluster(embedding, cluster_edges)
-                nearest_centroid = (cluster_edges[nearest_cluster_idx][0] + cluster_edges[nearest_cluster_idx][1]) / 2
-                anonymized_embeddings.append(torch.tensor(nearest_centroid, dtype=torch.float32))
-                not_found_count += 1
+                break
 
-                #laplace_noise_vector = np.random.laplace(scale=noise_scale, size=embeddings.shape)
-                #anonymized_embeddings.append(embedding + laplace_noise_vector)
+        if not condition_min and not condition_max:
+            nearest_cluster_idx = find_nearest_cluster(embedding, cluster_edges)
+            nearest_centroid = (cluster_edges[nearest_cluster_idx][0] + cluster_edges[nearest_cluster_idx][1]) / 2
+            anonymized_embeddings.append(torch.tensor(nearest_centroid, dtype=torch.float32))
+            not_found_count += 1
+
+            #laplace_noise_vector = np.random.laplace(scale=noise_scale, size=embeddings.shape)
+            #anonymized_embeddings.append(embedding + laplace_noise_vector)
 
     print(f"Embeddings found in clusters: {found_count}")
     print(f"Embeddings not found in clusters: {not_found_count}")
