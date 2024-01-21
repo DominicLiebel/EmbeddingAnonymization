@@ -3,6 +3,10 @@
 import torch
 from torch import nn
 
+# Set seeds for reproducibility
+torch.manual_seed(42)
+
+
 
 class DropoutModel(nn.Module):
     def __init__(self, input_size, output_size):

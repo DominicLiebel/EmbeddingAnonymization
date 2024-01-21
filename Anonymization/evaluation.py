@@ -2,10 +2,14 @@
 
 import torch
 from torch.utils.data import TensorDataset, DataLoader
-
-from anonymization import anonymize_embeddings
 from train import train, validate
 from train_util import adjust_learning_rate
+from visualization import visualize_clusters_with_anonymized
+from anonymization import anonymize_embeddings_cluster_creator, anonymize_embeddings_cluster
+
+# Set seeds for reproducibility
+torch.manual_seed(42)
+
 
 def check_overlap(original_embeddings, anonymized_embeddings):
     """
@@ -74,67 +78,81 @@ def calculate_mean_relative_difference(original_embeddings, anonymized_embedding
     return mean_relative_differences
 
 
-def find_best_parameters(args, normalized_train_embeddings, normalized_test_embeddings, model,
+def find_best_parameters(args, train_embeddings, test_embeddings, model,
                          optimizer, criterion, train_labels, test_labels):
     original_model_accuracy_cifar10 = 0.9893
     original_model_accuracy_cifar100 = 0.9120
     reconstruction_errors = []
     accuracy_losses = []
 
-    all_epsilons = []
-    all_min_samples_values = []
-    all_noise_scale_values = []
+    if args.method == "cluster":
+        all_epsilons = []
+        all_min_samples_values = []
+        all_noise_scale_values = []
 
-    for eps in args.eps_tuning:
-        for min_samples in args.min_samples_tuning:
-            for noise_scale in args.noise_scale_tuning:
-                # Anonymize embeddings using selected method
-                test_anonymized_embeddings = (
-                    anonymize_embeddings(normalized_test_embeddings, args.method, eps=eps, min_samples=min_samples, noise_scale=noise_scale))
-                train_embeddings_anonymized = (
-                    anonymize_embeddings(normalized_train_embeddings, args.method, eps=eps, min_samples=args.min_samples, noise_scale=args.noise_scale))
+        for eps in args.eps_tuning:
+            for min_samples in args.min_samples_tuning:
+                for noise_scale in args.noise_scale_tuning:
+                    # Anonymize embeddings using the cluster-based method
+                    cluster_edges_train = anonymize_embeddings_cluster_creator(train_embeddings, eps, min_samples)
+                    train_embeddings_anonymized = anonymize_embeddings_cluster(cluster_edges_train, train_embeddings, noise_scale)
+                    print(f"Number of clusters in training set: {len(cluster_edges_train)}")
 
-                train_dataset = TensorDataset(torch.from_numpy(train_embeddings_anonymized), torch.from_numpy(train_labels))
-                test_dataset = TensorDataset(torch.from_numpy(test_anonymized_embeddings), torch.from_numpy(test_labels))
+                    # Anonymize test embeddings using the same clusters
+                    test_embeddings_anonymized = anonymize_embeddings_cluster(cluster_edges_train, test_embeddings, noise_scale)
 
-                train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=2)
-                test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, num_workers=2)
-                for epoch in range(args.epochs):
-                    adjust_learning_rate(optimizer, epoch, args)
+                    print(f"Number of clusters in testing set: {len(cluster_edges_train)}")
 
-                    # train loop
-                    train(epoch, train_loader, model, optimizer, criterion)
+                    # Visualization code
+                    #visualize_clusters_with_anonymized(test_embeddings, test_embeddings_anonymized, cluster_edges_train, title='Embeddings Visualization with Clusters')
 
-                    # validation loop
-                    acc, cm = validate(epoch, test_loader, model, criterion, args.train_file_path)
+                    #TODO: Change visualization to color anonymized dots in a cluster green and dots outside in red
+                    print(type(train_embeddings_anonymized), train_embeddings_anonymized.size(0)) #<class 'torch.Tensor'> 76420
+                    print(type(train_labels),train_labels.size(0)) #<class 'torch.Tensor'> 50000
+                    print(type(test_embeddings_anonymized),test_embeddings_anonymized.size(0)) #<class 'torch.Tensor'> 74788
+                    print(type(test_labels),test_labels.size(0)) #<class 'torch.Tensor'> 10000
 
-                    # Calculate reconstruction error and accuracy loss
-                    # Convert NumPy arrays to PyTorch tensors
-                    normalized_test_embeddings_tensor = torch.from_numpy(normalized_test_embeddings)
-                    test_anonymized_embeddings_tensor = torch.from_numpy(test_anonymized_embeddings)
+                    #TODO: Wrong sizes
+                    train_dataset = TensorDataset(train_embeddings_anonymized, train_labels)
+                    test_dataset = TensorDataset(test_embeddings_anonymized, test_labels)
+                    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=2)
+                    test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, num_workers=2)
+                    for epoch in range(args.epochs):
+                        adjust_learning_rate(optimizer, epoch, args)
 
-                    reconstruction_error = torch.mean((normalized_test_embeddings_tensor - test_anonymized_embeddings_tensor)**2).item()
-                    if "cifar100" in args.train_file_path:
-                        accuracy_loss = original_model_accuracy_cifar100 - acc
-                    elif "cifar10" in args.train_file_path:
-                        accuracy_loss = original_model_accuracy_cifar10 - acc
+                        # train loop
+                        train(epoch, train_loader, model, optimizer, criterion)
 
-                    # Append to lists
-                    reconstruction_errors.append(reconstruction_error)
-                    accuracy_losses.append(accuracy_loss)
+                        # validation loop
+                        acc, cm = validate(epoch, test_loader, model, criterion, args.test_file_path)
 
-                    # Update lists for all parameters
-                    all_epsilons.append(eps)
-                    all_min_samples_values.append(min_samples)
-                    all_noise_scale_values.append(noise_scale)
+                        # Calculate reconstruction error and accuracy loss
+                        # Convert NumPy arrays to PyTorch tensors
+                        normalized_test_embeddings_tensor = torch.from_numpy(test_embeddings)
+                        test_anonymized_embeddings_tensor = torch.from_numpy(test_embeddings_anonymized)
 
-                    has_overlap = check_overlap(normalized_test_embeddings, test_anonymized_embeddings)
+                        reconstruction_error = torch.mean((normalized_test_embeddings_tensor - test_anonymized_embeddings_tensor)**2).item()
+                        if "cifar100" in args.train_file_path:
+                            accuracy_loss = original_model_accuracy_cifar100 - acc
+                        elif "cifar10" in args.train_file_path:
+                            accuracy_loss = original_model_accuracy_cifar10 - acc
 
-                    # Print results for the current iteration
-                    print(f"Iteration: Epsilon={eps}, Min Samples={min_samples}, Noise Scale={noise_scale}, "
-                          f"Accuracy={acc * 100:.2f}%, "
-                          f"Reconstruction Error={reconstruction_error:.4f} "
-                          f"Accuracy Loss={accuracy_loss:.4f} "
-                          f"Overlap={has_overlap}")
+                        # Append to lists
+                        reconstruction_errors.append(reconstruction_error)
+                        accuracy_losses.append(accuracy_loss)
 
-    return (reconstruction_errors, accuracy_losses, all_epsilons, all_min_samples_values, all_noise_scale_values)
+                        # Update lists for all parameters
+                        all_epsilons.append(eps)
+                        all_min_samples_values.append(min_samples)
+                        all_noise_scale_values.append(noise_scale)
+
+                        has_overlap = check_overlap(test_embeddings, test_embeddings_anonymized)
+
+                        # Print results for the current iteration
+                        print(f"Iteration: Epsilon={eps}, Min Samples={min_samples}, Noise Scale={noise_scale}, "
+                              f"Accuracy={acc * 100:.2f}%, "
+                              f"Reconstruction Error={reconstruction_error:.4f} "
+                              f"Accuracy Loss={accuracy_loss:.4f} "
+                              f"Overlap={has_overlap}")
+
+        return (reconstruction_errors, accuracy_losses, all_epsilons, all_min_samples_values, all_noise_scale_values)

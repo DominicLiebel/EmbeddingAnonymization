@@ -1,10 +1,9 @@
 # visualization.py
 
-import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
 from sklearn.decomposition import PCA
-
 import matplotlib.pyplot as plt
+import numpy as np
 
 def plot_accuracy_vs_error(args, reconstruction_errors, accuracy_losses, method_to_test, all_epsilons, all_min_samples_values, all_noise_scale_values):
     """
@@ -69,4 +68,29 @@ def visualize_clusters(embeddings, labels, method='t-SNE', n_components=2):
     plt.title(f'Clusters after Anonymization ({method})')
     plt.xlabel(f'{method} Component 1')
     plt.ylabel(f'{method} Component 2')
+    plt.show()
+
+def visualize_clusters_with_anonymized(test_embeddings, anonymized_embeddings, cluster_edges, title='Embeddings Visualization with Clusters'):
+    plt.figure(figsize=(10, 8))
+
+    # Plot the original test embeddings
+    plt.scatter(test_embeddings[:, 0], test_embeddings[:, 1], c='blue', label='Original Test Embeddings')
+
+    # Plot the cluster edges
+    for cluster_edge in cluster_edges:
+        min_values, max_values = cluster_edge
+        plt.plot([min_values[0], max_values[0], max_values[0], min_values[0], min_values[0]],
+                 [min_values[1], min_values[1], max_values[1], max_values[1], min_values[1]],
+                 color='red', linestyle='dashed', linewidth=2, alpha=0.7, label='Cluster Edges')
+
+    # Convert anonymized_embeddings to a NumPy array
+    anonymized_embeddings_np = np.array(anonymized_embeddings)
+
+    # Plot the anonymized embeddings within the clusters
+    plt.scatter(anonymized_embeddings_np[:, 0], anonymized_embeddings_np[:, 1], c='green', s=10, label='Anonymized Embeddings')
+
+    plt.title(title)
+    plt.xlabel('Feature 1')
+    plt.ylabel('Feature 2')
+    plt.legend()
     plt.show()

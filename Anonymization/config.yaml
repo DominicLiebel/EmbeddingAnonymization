@@ -5,33 +5,34 @@ Train:
   batch_size: 128
   learning_rate: 0.001
   reg: 0.0005
-  epochs: 3
-  steps: [5, 8]
-  warmup: 0
+  epochs: 7
+  steps: [5, 7]
+  warmup: 1
   momentum: 0.9
   dropout_rate: 0.5
   optimizer: Adam #Adam, SGD
 
 network:
-  model: SimpleModel # DropoutAndBatchnormModel, Dropoutmodel, SimpleModel
+  model: SimpleModel # DropoutAndBatchnormModel, DropoutModel, SimpleModel
 
 data:
   save_best: True
+  normalize: True
 
 loss:
   loss_type: CE #CE
 
 file_paths:
-  train_file_path: train_cifar100.npz
-  test_file_path: test_cifar100.npz
+  train_file_path: train_cifar10.npz
+  test_file_path: test_cifar10.npz
 
 Anonymization:
-  method: density_based #density_based, laplace, dp, hasing, pca, permutation, random
+  method: cluster #cluster, laplace, dp, pca, permutation, random, None
   eps: 1.2
   min_samples: 3
-  noise_scale: 0.1
+  noise_scale: 0.5
 
 Anonymization_tuning:
-  eps_tuning: [5]
-  min_samples_tuning: [50, 100]
+  eps_tuning: [20, 10, 5]
+  min_samples_tuning: [5, 10]
   noise_scale_tuning: [0.00]

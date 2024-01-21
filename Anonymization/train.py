@@ -4,6 +4,9 @@ from train_util import AverageMeter
 import time
 import torch
 
+# Set seeds for reproducibility
+torch.manual_seed(42)
+
 
 def train(epoch, data_loader, model, optimizer, criterion):
 
@@ -60,7 +63,7 @@ def validate(epoch, val_loader, model, criterion, file_path):
         num_class = 100
     else:
         num_class = 10
-    cm =torch.zeros(num_class, num_class)
+    cm = torch.zeros(num_class, num_class)
 
     # evaluation loop
     for idx, (data, target) in enumerate(val_loader):

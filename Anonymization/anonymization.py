@@ -6,6 +6,10 @@ from sklearn.cluster import DBSCAN
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 
+# Set seeds for reproducibility
+torch.manual_seed(42)
+np.random.seed(42)
+
 
 def anonymize_embeddings_random(embeddings, noise_factor=0.1):
     anonymized_embeddings = noise_factor * torch.randn_like(embeddings)
@@ -18,15 +22,24 @@ def anonymize_embeddings_laplace(embeddings, noise_scale=0.1):
 
     Parameters:
     - embeddings: PyTorch tensor, the original embeddings
-    - epsilon: float, scale parameter for Laplace distribution
-    - device: str, device to place the noise tensor on ("cpu" or "cuda")
+    - noise_scale: float, scale parameter for Laplace distribution
 
     Returns:
     - PyTorch tensor, anonymized embeddings
     """
+    if isinstance(embeddings, np.ndarray):
+        embeddings = torch.tensor(embeddings, dtype=torch.float32)
+
+    scaler = StandardScaler()
+    embeddings = scaler.fit_transform(embeddings)
     laplace_noise = torch.tensor(np.random.laplace(scale=noise_scale, size=embeddings.shape),
                                  dtype=torch.float32)
-    anonymized_embeddings = embeddings + laplace_noise
+
+    # Add Laplace noise to each element in the embeddings tensor
+    anonymized_embeddings = embeddings.copy()
+    for i in range(embeddings.shape[0]):
+        anonymized_embeddings[i] += laplace_noise[i]
+
     return anonymized_embeddings
 
 
@@ -51,53 +64,79 @@ def anonymize_embeddings_pca(embeddings, n_components=2):
     return torch.tensor(pca.fit_transform(embeddings.cpu().numpy()), dtype=torch.float32)
 
 
-def anonymize_embeddings_density_based(embeddings, eps=0.5, min_samples=5, noise_scale=0.01, device="cpu"):
-    """
-    Anonymize embeddings using density-based clustering.
+def get_cluster_edges(cluster_embeddings):
+    cluster_embeddings_np = cluster_embeddings.numpy()
+    min_values = np.min(cluster_embeddings_np, axis=0)
+    max_values = np.max(cluster_embeddings_np, axis=0)
+    return min_values, max_values
 
-    Parameters:
-    - embeddings: PyTorch tensor or NumPy array, the original embeddings
-    - eps: float, maximum distance between two samples for one to be considered as in the neighborhood of the other
-    - min_samples: int, the number of samples in a neighborhood for a point to be considered as a core point
-    - noise_scale: float, scale parameter for Laplace noise
-    - device: str, device to place the noise tensor on ("cpu" or "cuda")
 
-    Returns:
-    - PyTorch tensor, anonymized embeddings
-    """
-    if isinstance(embeddings, np.ndarray):
-        embeddings = torch.tensor(embeddings, dtype=torch.float32, device=device)
+def find_nearest_cluster(embedding, cluster_edges):
+    distances = [np.linalg.norm(embedding - ((min_values + max_values) / 2)) for min_values, max_values in cluster_edges]
+    nearest_cluster_idx = np.argmin(distances)
+    return nearest_cluster_idx
 
-    scaler = StandardScaler()
-    embeddings = scaler.fit_transform(embeddings)
 
-    # Perform density-based clustering using DBSCAN
-    db = DBSCAN(eps=eps, min_samples=min_samples).fit(embeddings)
+def anonymize_embeddings_cluster_creator(train_embeddings, eps, min_samples):
+    # Create a DBSCAN model
+    dbscan = DBSCAN(eps=eps, min_samples=min_samples)
 
-    # Assign a cluster label to each data point
-    cluster_labels = db.labels_
+    # Fit the model to the original embeddings
+    labels = dbscan.fit_predict(train_embeddings.numpy())  # Convert to NumPy array
 
-    # Generate Laplace noise
-    laplace_noise = np.random.laplace(scale=noise_scale, size=embeddings.shape)
+    # Get the unique cluster labels
+    unique_labels = np.unique(labels)
+    print("Number of clusters:", len(unique_labels))
 
-    # Add noise to each cluster separately
-    unique_labels = np.unique(cluster_labels)
-    anonymized_embeddings = embeddings.copy()
+    # Initialize an array to store the cluster edges
+    cluster_edges = []
+
+    # Calculate the edges for each cluster
     for label in unique_labels:
-        cluster_indices = (cluster_labels == label)
-        anonymized_embeddings[cluster_indices] += laplace_noise[cluster_indices]
+        cluster_mask = (labels == label)
+        cluster_embeddings = train_embeddings[cluster_mask]
+        min_values, max_values = get_cluster_edges(cluster_embeddings)
+        min_values_tensor = torch.tensor(min_values, dtype=torch.float32)
+        max_values_tensor = torch.tensor(max_values, dtype=torch.float32)
+        cluster_edges.append((min_values_tensor, max_values_tensor))
+
+    return cluster_edges
+
+
+def anonymize_embeddings_cluster(cluster_edges, embeddings, noise_scale):
+    anonymized_embeddings = []
+    found_count = 0  # Counter for embeddings not found in any cluster
+    not_found_count = 0  # Counter for embeddings not found in any cluster
+
+    for embedding in embeddings:
+
+        for cluster_edge in cluster_edges:
+            min_values, max_values = cluster_edge
+            # Check if all elements in embedding are greater than or equal to min_values
+            condition_min = torch.all(embedding >= min_values)
+
+            # Check if all elements in embedding are less than or equal to max_values
+            condition_max = torch.all(embedding <= max_values)
+
+            if condition_min and condition_max:
+                # Test embedding is within the cluster, use cluster coordinates
+                centroid = (min_values + max_values) / 2
+                anonymized_embeddings.append(centroid)
+                found_count += 1
+            else:
+                # Find the nearest cluster centroid
+                nearest_cluster_idx = find_nearest_cluster(embedding, cluster_edges)
+                nearest_centroid = (cluster_edges[nearest_cluster_idx][0] + cluster_edges[nearest_cluster_idx][1]) / 2
+                anonymized_embeddings.append(torch.tensor(nearest_centroid, dtype=torch.float32))
+                not_found_count += 1
+
+                #laplace_noise_vector = np.random.laplace(scale=noise_scale, size=embeddings.shape)
+                #anonymized_embeddings.append(embedding + laplace_noise_vector)
+
+    print(f"Embeddings found in clusters: {found_count}")
+    print(f"Embeddings not found in clusters: {not_found_count}")
+
+    anonymized_embeddings = torch.stack(anonymized_embeddings)
+
+
     return anonymized_embeddings
-
-
-def anonymize_embeddings(embeddings, method, eps=None, min_samples=None, noise_scale=None, device="cpu"):
-    if method == 'density_based':
-        return anonymize_embeddings_density_based(embeddings, eps=eps, min_samples=min_samples,
-                                                  noise_scale=noise_scale, device=device)
-    elif method == 'dp':
-        return anonymize_embeddings_dp(embeddings, epsilon=eps)
-    elif method == 'laplace':
-        return anonymize_embeddings_laplace(embeddings, noise_scale=noise_scale)
-    elif method == 'None':
-        return embeddings
-    else:
-        raise ValueError("Unsupported anonymization method")
