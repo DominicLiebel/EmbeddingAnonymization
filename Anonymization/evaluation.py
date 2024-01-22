@@ -103,14 +103,15 @@ def find_best_parameters(args, train_embeddings, test_embeddings, model,
 
                     print(f"Number of clusters in testing set: {len(cluster_edges_train)}")
 
-                    # Visualization code
-                    visualize_clusters_with_anonymized_3d(test_embeddings, test_embeddings_anonymized, cluster_edges_train, title='Embeddings Visualization with Clusters before Training')
+
+                    #visualize_clusters_with_anonymized_3d(test_embeddings, test_embeddings_anonymized, cluster_edges_train, title='Embeddings Visualization with Clusters before Training')
 
                     #TODO: Change visualization to color anonymized dots in a cluster green and dots outside in red
 
-                    #TODO: Wrong sizes when cluster is 1 (low EPS, limit I found was approx. >5
                     train_dataset = TensorDataset(train_embeddings_anonymized, train_labels)
                     test_dataset = TensorDataset(test_embeddings_anonymized, test_labels)
+
+                    #TODO: Use anonymized embedding to train dataset?
                     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=2)
                     test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, num_workers=2)
                     for epoch in range(args.epochs):
@@ -148,7 +149,7 @@ def find_best_parameters(args, train_embeddings, test_embeddings, model,
                               f"Reconstruction Error={reconstruction_error:.4f} "
                               f"Accuracy Loss={accuracy_loss:.4f} "
                               f"Overlap={has_overlap}")
-                    visualize_clusters_with_anonymized_3d(test_embeddings, test_embeddings_anonymized, cluster_edges_train, title='Embeddings Visualization with Clusters after Training')
+                    #visualize_clusters_with_anonymized_3d(test_embeddings, test_embeddings_anonymized, cluster_edges_train, title='Embeddings Visualization with Clusters after Training')
 
 
         return (reconstruction_errors, accuracy_losses, all_epsilons, all_min_samples_values, all_noise_scale_values)

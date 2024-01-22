@@ -5,6 +5,7 @@ import numpy as np
 from sklearn.cluster import DBSCAN
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import silhouette_score
 
 # Set seeds for reproducibility
 torch.manual_seed(42)
@@ -85,6 +86,10 @@ def anonymize_embeddings_cluster_creator(train_embeddings, eps, min_samples):
     # Fit the model to the original embeddings
     labels = dbscan.fit_predict(train_embeddings.numpy())  # Convert to NumPy array
 
+    silhouette = silhouette_score(train_embeddings, labels)
+
+    print(f"Epsilon: {eps}, Silhouette Score: {silhouette}")
+
     # Get the unique cluster labels
     unique_labels = np.unique(labels)
     print("Number of clusters:", len(unique_labels))
@@ -105,7 +110,7 @@ def anonymize_embeddings_cluster_creator(train_embeddings, eps, min_samples):
 
 
 #TODO: Add kNN anonymization method
-
+#TODO: Cluster embeddings by label, then try cluster anonymization?
 def anonymize_embeddings_cluster(cluster_edges, embeddings, noise_scale):
     anonymized_embeddings = []
     found_count = 0  # Counter for embeddings not found in any cluster
@@ -137,6 +142,8 @@ def anonymize_embeddings_cluster(cluster_edges, embeddings, noise_scale):
             #laplace_noise_vector = np.random.laplace(scale=noise_scale, size=embeddings.shape)
             #anonymized_embeddings.append(embedding + laplace_noise_vector)
 
+    #TODO: Found in corectly labeled cluster
+    # Add label to clusters?
     print(f"Embeddings found in clusters: {found_count}")
     print(f"Embeddings not found in clusters: {not_found_count}")
 

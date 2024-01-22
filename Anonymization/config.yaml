@@ -33,6 +33,6 @@ Anonymization:
   noise_scale: 0.5
 
 Anonymization_tuning:
-  eps_tuning: [20] #Approx over 5 and under 40
-  min_samples_tuning: [5] #Approx under 100 and over 5
+  eps_tuning: [10 ,15, 20, 25, 30] #Approx over 1 and under 35 - Higher = more clusters, higher accuracy #TODO
+  min_samples_tuning: [1, 2, 3] #Approx under 10   - Lower = more clusters, higher accuracy #TODO
   noise_scale_tuning: [0.00]

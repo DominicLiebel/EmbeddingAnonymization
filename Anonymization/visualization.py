@@ -100,7 +100,7 @@ def visualize_clusters_with_anonymized_3d(test_embeddings, anonymized_embeddings
     ax = fig.add_subplot(111, projection='3d')
 
     # Plot the original test embeddings
-    ax.scatter(test_embeddings[:, 0], test_embeddings[:, 1], test_embeddings[:, 2], c='blue', label='Original Test Embeddings')
+    ax.scatter(test_embeddings[:, 0], test_embeddings[:, 1], test_embeddings[:, 2],s = 5, c='blue', label='Original Test Embeddings')
 
     # Plot the cluster edges
     for cluster_edge in cluster_edges:
