@@ -1,10 +1,15 @@
 # Embedding Anonymization
 
-This Python project aims to anonymize embeddings while maintaining high accuracy with a high reconstruction error.
+This Python project aims to anonymize embeddings while maintaining high utility.
+
+## Hypothesis: Accuracy loss correlates…
+ **<font color="green">...positively</font>** with Privacy e.g. <font color="green">Reconstruction Error</font>
+ 
+ **<font color="red">...negatively</font>** with Utility e.g. <font color="red">Variance Retention</font>, <font color="red">Projection Robustness</font>
+
 
 ## Original CIFAR100 Embeddings
 <img width="330" alt="image" src="https://github.com/DominicLiebel/EmbeddingAnonymization/assets/20253502/1da5bc1e-e0fb-4d9f-b83f-a4976925a5b7">
-
 
 
 ## Measures of Anonymization
@@ -14,8 +19,13 @@ This Python project aims to anonymize embeddings while maintaining high accuracy
   e.g.: `Reconstruction Error: 4.0027`
 - **Mean Relative Difference:** Mean relative differences measure the average percentage change between the original and anonymized embeddings for each image.<br>
   e.g.: `Image 1 -> Mean Relative Difference: 69.68424224853516%`
+- **Relative Reconstruction Error:** Relative reconstruction error provides a normalized measure of the reconstruction error by dividing the reconstruction error by the total variance of the original data.
+- **Variance Retention:** Variance retention represents the proportion of variance preserved after the anonymization process compared to the original embeddings.
+- **Projection Robustness:** Projection robustness assesses the stability of the embeddings under different projection methods, providing insights into the robustness of the anonymization technique.
 
-The reconstruction error focuses on the fidelity of the anonymized embeddings compared to the original embeddings, the mean relative differences give an average percentage change, providing a broader understanding of the overall impact on individual embeddings across the dataset. Both metrics are valuable depending on the specific goals and considerations of the anonymization process.
+These metrics collectively offer a nuanced understanding of the anonymization process, catering to different goals and considerations depending on the specific context and requirements.
+
+
 
 ### Density Based Anonymization (CIFAR100)
 <img width="330" alt="image" src="https://github.com/DominicLiebel/EmbeddingAnonymization/assets/20253502/7020740f-63ee-4231-b50e-49fa3cb3ddd6">
@@ -44,6 +54,8 @@ The project is structured as follows:
 - **evaluation.py:** Contains a function to find the best parameters for anonymization.
 - **visualization.py:** Provides a visualization function.
 - **data_loader.py:** Contains a function to load the data.
+- **experiments.ipynb:** Contains experiments with self-generated embeddings.
+
 
 
 # Experimental Results Interpretation (CIFAR10)
@@ -61,47 +73,15 @@ Now, let's analyze the outcomes:
 1. **Accuracy**: Represents the percentage of correctly classified instances. Higher accuracy values are generally preferred.
 
    - Accuracy ranges from approximately 78.56% to 94.65%.
-   - Generally, there seems to be a negative correlation between epsilon and accuracy.
+   - Generally, there seems to be a negative correlation between noise and accuracy.
    - Within a specific epsilon value, an increase in noise scale tends to result in decreased accuracy.
 
 2. **Reconstruction Error**: Indicates how well the reconstructed data aligns with the original data. Higher reconstruction error values are desirable for anonymization.
 
-   - Reconstruction error ranges from approximately 1.9978 to 4.5029.
-   - The reconstruction error does not exhibit a clear trend with epsilon or noise scale.
+   - Reconstruction error ranges from approximately 2 to 4.5.
+   - The reconstruction error does not exhibit a clear trend with epsilon.
 
-It appears there is a discernible trade-off between accuracy and epsilon, with higher epsilon values corresponding to lower accuracy. The relationship with noise scale is not as straightforward.
-
-# Experimental Results Interpretation (CIFAR100)
-<img width="454" alt="image" src="https://github.com/DominicLiebel/EmbeddingAnonymization/assets/20253502/3a98a94f-05bb-4e30-8023-f45f50d01a3f">
-
-## Negative Accuracy Loss in Anonymization
-
-In the context of the anonymization process, the term "accuracy loss" refers to the difference in accuracy between the original (unanonymized) embeddings and the anonymized embeddings. A negative accuracy loss indicates that the anonymized embeddings outperformed the unanonymized embeddings.
-
-## Interpretation of Negative Accuracy Loss
-
-Consider the data point in the generated graph:
-
-- **Epsilon=0.85, Min Samples=3, Noise Scale=0.5, Accuracy=77.84%, Reconstruction Error=0.4998**
-
-In this case, the accuracy of the anonymized embeddings is approximately 77.84%, and the reconstruction error is 0.4998. The key observation is that the accuracy of the anonymized embeddings is higher than that of the original (unanonymized) embeddings. The negative accuracy loss at around -0.1 indicates an improvement in accuracy after the anonymization process.
-
-## Implications
-
-- **Positive Anonymization Impact:** A negative accuracy loss suggests that the anonymization process, under the specified parameters (Epsilon, Min Samples, Noise Scale), has resulted in embeddings that perform better in terms of accuracy compared to the original embeddings.
-
-- **Enhanced Privacy:** Achieving better accuracy with anonymized embeddings implies that privacy-preserving measures, such as noise addition and anonymization techniques, were successful in maintaining or even improving the utility of the data while protecting individual privacy.
-
-## Considerations
-
-- **Parameter Sensitivity:** The interpretation is based on the specific parameters used in the anonymization process (Epsilon, Min Samples, Noise Scale). Different parameter combinations may lead to varied results, and it is essential to carefully choose these parameters based on the desired trade-off between privacy and utility.
-
-- **Visualizing Trends:** It is recommended to visualize trends across different parameter values to gain insights into the impact of anonymization on accuracy and reconstruction error.
-
-## Conclusion
-
-Negative accuracy loss in anonymization, as observed in this specific data point, signifies an encouraging outcome where the anonymized embeddings perform better in terms of accuracy than the original embeddings. This documentation serves to highlight the positive impact of the anonymization process on the utility of the data while preserving privacy.
-
+It appears there is a discernible trade-off between accuracy and noise, with higher noise values corresponding to lower accuracy. The relationship with epsilon is not as straightforward. This may be due to an implementation error.
 
 
 
@@ -113,8 +93,35 @@ To get started, follow these steps:
 4. Provide: `test_cifar10.npz, train_cifar10.npz, test_cifar100.npz, train_cifar100.npz`
 5. Run the main script: `python main.py`
 
-Feel free to explore and modify the code based on your specific requirements.
+# Experiments
+**The Experiments Jupyter notebook demonstrates several techniques for anonymizing embeddings, evaluating the effectiveness of the anonymization, and visualizing the results.** 
 
+## Libraries Used
+- Matplotlib: For data visualization.
+- mpl_toolkits.mplot3d: For 3D visualization.
+- Torch: PyTorch library for machine learning.
+- NumPy: For numerical operations.
+- Scikit-learn: For machine learning algorithms such as DBSCAN and PCA.
+- Sys: For system-specific parameters and functions.
+- Random: For generating random numbers.
+
+## Description
+1. **Anonymization Techniques**: The notebook presents various anonymization techniques, including DBSCAN clustering and PCA.
+2. **Evaluation Metrics**: It calculates and prints several evaluation metrics such as Reconstruction Error, Relative Reconstruction Error, Variance Retention, and Projection Robustness.
+3. **Visualization**: The notebook visualizes both original and anonymized embeddings using scatter plots in 3D space.
+4. **Functions**: It includes functions for anonymizing embeddings, evaluating metrics, and visualizing embeddings.
+
+## Note
+- This notebook assumes familiarity with concepts such as embeddings, clustering, PCA, and evaluation metrics.
+- Some parameters such as DBSCAN `eps` and `min_samples` require tuning for optimal performance depending on the dataset.
+
+## Getting Started: Experiments
+To get started with the further experiments:
+1. Ensure all necessary libraries are installed.
+2. Run the notebook cells sequentially to perform anonymization, evaluation, and visualization.
+3. Modify parameters as needed, such as DBSCAN parameters, noise scale, and embedding dimensions.
+4. Explore the visualization to understand the effectiveness of the anonymization techniques.
+Feel free to explore and modify the code based on your specific requirements.
 
 ## First Tries
 <img width="330" alt="image" src="https://github.com/DominicLiebel/EmbeddingAnonymization/assets/20253502/4f288bd4-02eb-4530-af99-8da8cdfbd8c2">
