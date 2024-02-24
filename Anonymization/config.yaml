@@ -5,7 +5,7 @@ Train:
   batch_size: 128
   learning_rate: 0.001
   reg: 0.0005
-  epochs: 7
+  epochs: 10
   steps: [5, 7]
   warmup: 1
   momentum: 0.9
@@ -27,12 +27,12 @@ file_paths:
   test_file_path: test_cifar10.npz
 
 Anonymization:
-  method: cluster #cluster, laplace, dp, pca, permutation, random, None
+  method: laplace #uniform, gaussian, laplace, pca, cluster, None
   eps: 1.2
   min_samples: 3
-  noise_scale: 0.5
+  noise_scale: 0.5 #Also used for PCA dimensions!
 
 Anonymization_tuning:
-  eps_tuning: [10 ,15, 20, 25, 30] #Approx over 1 and under 35 - Higher = more clusters, higher accuracy #TODO
-  min_samples_tuning: [1, 2, 3] #Approx under 10   - Lower = more clusters, higher accuracy #TODO
-  noise_scale_tuning: [0.00]
+  eps_tuning: [2 ,2.25, 2.5, 2.75, 3]  #Used for uniform, gaussian, laplace and cluster; For Cluster: Approx over 20 and under 35 - Higher = more clusters, higher accuracy
+  min_samples_tuning: [1, 2, 3] #For cluster: Approx under 10   - Lower = more clusters, higher accuracy #TODO
+  noise_scale_tuning: [768] #Used for PCA dimensions! TODO: Dimension problems, My apparently fixed this in her code.

@@ -75,11 +75,20 @@ def main():
         print("Adam")
 
     if args.tuning:
-        reconstruction_errors, accuracy_losses, all_epsilons, all_min_samples_values, all_noise_scale_values = find_best_parameters(args, train_embeddings, test_embeddings, model,
-                                                                                                                                    optimizer, criterion, train_labels, test_labels)
-        plot_accuracy_vs_error_every_epoch(args, reconstruction_errors, accuracy_losses, args.method, all_epsilons, all_min_samples_values, all_noise_scale_values)
+        if args.method == "cluster":
+            reconstruction_errors, accuracy_losses, all_epsilons, all_min_samples_values, all_noise_scale_values = find_best_parameters(args, train_embeddings, test_embeddings, model,
+                                                                                                                                        optimizer, criterion, train_labels, test_labels)
+            plot_accuracy_vs_error_every_epoch(args, reconstruction_errors, accuracy_losses, args.method, all_epsilons, all_min_samples_values, all_noise_scale_values)
 
+        elif args.method == "pca":
+            reconstruction_errors, accuracy_losses, all_noise_scale_values = find_best_parameters(args, train_embeddings, test_embeddings, model,
+                                                                                                                                        optimizer, criterion, train_labels, test_labels)
+            plot_accuracy_vs_error_every_epoch(args, reconstruction_errors, accuracy_losses, args.method, all_noise_scale_values)
 
+        elif args.method == "uniform" or args.method == "gaussian" or args.method == "laplace":
+            reconstruction_errors, accuracy_losses, all_noise_scale_values = find_best_parameters(args, train_embeddings, test_embeddings, model,
+                                                                                                  optimizer, criterion, train_labels, test_labels)
+            plot_accuracy_vs_error_every_epoch(args, reconstruction_errors, accuracy_losses, args.method, all_noise_scale_values)
 
 if __name__ == "__main__":
     main()

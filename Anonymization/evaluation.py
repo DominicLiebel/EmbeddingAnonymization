@@ -5,7 +5,7 @@ from torch.utils.data import TensorDataset, DataLoader
 from train import train, validate
 from train_util import adjust_learning_rate
 from visualization import visualize_clusters_with_anonymized_3d
-from anonymization import anonymize_embeddings_cluster_creator, anonymize_embeddings_cluster
+from anonymization import anonymize_embeddings_uniform, anonymize_embeddings_gaussian, anonymize_embeddings_laplace, anonymize_embeddings_pca, anonymize_embeddings_cluster, anonymize_embeddings_cluster_creator
 
 # Set seeds for reproducibility
 torch.manual_seed(42)
@@ -80,12 +80,111 @@ def calculate_mean_relative_difference(original_embeddings, anonymized_embedding
 
 def find_best_parameters(args, train_embeddings, test_embeddings, model,
                          optimizer, criterion, train_labels, test_labels):
-    original_model_accuracy_cifar10 = 0.9893
-    original_model_accuracy_cifar100 = 0.9120
+    original_model_accuracy_cifar10 = 0.9870
+    original_model_accuracy_cifar100 = 0.8925
     reconstruction_errors = []
     accuracy_losses = []
+    all_pca_dimension_values = []
+    all_epsilons = []
 
-    if args.method == "cluster":
+    if args.method == "pca":
+        for noise_scale in args.noise_scale_tuning:
+            train_embeddings_anonymized = anonymize_embeddings_pca(train_embeddings, noise_scale)
+
+            # Anonymize test embeddings using the same clusters
+            test_embeddings_anonymized = anonymize_embeddings_pca(test_embeddings, noise_scale)
+
+            train_dataset = TensorDataset(train_embeddings_anonymized, train_labels)
+            test_dataset = TensorDataset(test_embeddings_anonymized, test_labels)
+
+            train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=2)
+            test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, num_workers=2)
+            for epoch in range(args.epochs):
+                adjust_learning_rate(optimizer, epoch, args)
+
+                # Train loop
+                train(epoch, train_loader, model, optimizer, criterion)
+
+                # Validation loop
+                acc, cm = validate(epoch, test_loader, model, criterion, args.test_file_path)
+
+                # Calculate reconstruction error and accuracy loss
+
+                reconstruction_error = torch.mean((test_embeddings - test_embeddings_anonymized)**2).item()
+                if "cifar100" in args.train_file_path:
+                    accuracy_loss = original_model_accuracy_cifar100 - acc
+                elif "cifar10" in args.train_file_path:
+                    accuracy_loss = original_model_accuracy_cifar10 - acc
+
+                # Append to lists
+                reconstruction_errors.append(reconstruction_error)
+                accuracy_losses.append(accuracy_loss)
+
+                # Update lists for all parameters
+                all_pca_dimension_values.append(noise_scale)
+
+                has_overlap = check_overlap(test_embeddings, test_embeddings_anonymized)
+
+                # Print results for the current iteration
+                print(f"Iteration: Dimensions={noise_scale}, "
+                      f"Accuracy={acc * 100:.2f}%, "
+                      f"Reconstruction Error={reconstruction_error:.4f} "
+                      f"Accuracy Loss={accuracy_loss:.4f} "
+                      f"Overlap={has_overlap}")
+        return (reconstruction_errors, accuracy_losses, all_pca_dimension_values)
+
+    elif args.method == "uniform" or args.method == "gaussian" or args.method == "laplace":
+        for eps in args.eps_tuning:
+            if args.method == "uniform":
+                train_embeddings_anonymized = anonymize_embeddings_uniform(train_embeddings, epsilon=eps)
+                test_embeddings_anonymized = anonymize_embeddings_uniform(test_embeddings, epsilon=eps)
+            elif args.method == "gaussian":
+                train_embeddings_anonymized = anonymize_embeddings_gaussian(train_embeddings, epsilon=eps)
+                test_embeddings_anonymized = anonymize_embeddings_gaussian(test_embeddings, epsilon=eps)
+            elif args.method == "laplace":
+                train_embeddings_anonymized = anonymize_embeddings_laplace(train_embeddings, epsilon=eps)
+                test_embeddings_anonymized = anonymize_embeddings_laplace(test_embeddings, epsilon=eps)
+
+            train_dataset = TensorDataset(train_embeddings_anonymized, train_labels)
+            test_dataset = TensorDataset(test_embeddings_anonymized, test_labels)
+
+            train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=2)
+            test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, num_workers=2)
+            for epoch in range(args.epochs):
+                adjust_learning_rate(optimizer, epoch, args)
+
+                # Train loop
+                train(epoch, train_loader, model, optimizer, criterion)
+
+                # Validation loop
+                acc, cm = validate(epoch, test_loader, model, criterion, args.test_file_path)
+
+                # Calculate reconstruction error and accuracy loss
+                reconstruction_error = torch.mean((test_embeddings - test_embeddings_anonymized) ** 2).item()
+                if "cifar100" in args.train_file_path:
+                    accuracy_loss = original_model_accuracy_cifar100 - acc
+                elif "cifar10" in args.train_file_path:
+                    accuracy_loss = original_model_accuracy_cifar10 - acc
+
+                # Append to lists
+                reconstruction_errors.append(reconstruction_error)
+                accuracy_losses.append(accuracy_loss)
+
+                # Update lists for all parameters
+                all_epsilons.append(eps)
+
+                has_overlap = check_overlap(test_embeddings, test_embeddings_anonymized)
+
+                # Print results for the current iteration
+                print(f"Iteration: Dimensions={eps}, "
+                      f"Accuracy={acc * 100:.2f}%, "
+                      f"Reconstruction Error={reconstruction_error:.4f} "
+                      f"Accuracy Loss={accuracy_loss:.4f} "
+                      f"Overlap={has_overlap}")
+
+        return (reconstruction_errors, accuracy_losses, all_epsilons)
+
+    elif args.method == "cluster":
         all_epsilons = []
         all_min_samples_values = []
         all_noise_scale_values = []
@@ -94,21 +193,20 @@ def find_best_parameters(args, train_embeddings, test_embeddings, model,
             for min_samples in args.min_samples_tuning:
                 for noise_scale in args.noise_scale_tuning:
                     # Anonymize embeddings using the cluster-based method
-                    cluster_edges_train = anonymize_embeddings_cluster_creator(train_embeddings, eps, min_samples)
+                    cluster_edges_train, cluster_edges_labels = anonymize_embeddings_cluster_creator(train_embeddings, eps, min_samples, train_labels)
                     train_embeddings_anonymized = anonymize_embeddings_cluster(cluster_edges_train, train_embeddings, noise_scale)
-                    print(f"Number of clusters in training set: {len(cluster_edges_train)}")
+                    print(f"Number of clusters: {len(cluster_edges_train)}")
 
                     # Anonymize test embeddings using the same clusters
                     test_embeddings_anonymized = anonymize_embeddings_cluster(cluster_edges_train, test_embeddings, noise_scale)
 
-                    print(f"Number of clusters in testing set: {len(cluster_edges_train)}")
 
 
-                    #visualize_clusters_with_anonymized_3d(test_embeddings, test_embeddings_anonymized, cluster_edges_train, title='Embeddings Visualization with Clusters before Training')
+                    visualize_clusters_with_anonymized_3d(test_embeddings, test_embeddings_anonymized, cluster_edges_train, title='Embeddings Visualization with Clusters before Training')
 
-                    #TODO: Change visualization to color anonymized dots in a cluster green and dots outside in red
+                    #TODO: Change visualization to show clusters in 3D and color anonymized dots in a cluster green and dots outside in red
 
-                    train_dataset = TensorDataset(train_embeddings_anonymized, train_labels)
+                    train_dataset = TensorDataset(train_embeddings_anonymized, cluster_edges_labels)
                     test_dataset = TensorDataset(test_embeddings_anonymized, test_labels)
 
                     #TODO: Use anonymized embedding to train dataset?
@@ -149,7 +247,6 @@ def find_best_parameters(args, train_embeddings, test_embeddings, model,
                               f"Reconstruction Error={reconstruction_error:.4f} "
                               f"Accuracy Loss={accuracy_loss:.4f} "
                               f"Overlap={has_overlap}")
-                    #visualize_clusters_with_anonymized_3d(test_embeddings, test_embeddings_anonymized, cluster_edges_train, title='Embeddings Visualization with Clusters after Training')
+                    visualize_clusters_with_anonymized_3d(test_embeddings, test_embeddings_anonymized, cluster_edges_train, title='Embeddings Visualization with Clusters after Training')
 
-
-        return (reconstruction_errors, accuracy_losses, all_epsilons, all_min_samples_values, all_noise_scale_values)
+            return (reconstruction_errors, accuracy_losses, all_epsilons, all_min_samples_values, all_noise_scale_values)

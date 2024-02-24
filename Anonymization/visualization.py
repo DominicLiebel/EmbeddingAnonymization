@@ -28,7 +28,7 @@ def plot_accuracy_vs_error(args, reconstruction_errors, accuracy_losses, method_
     plt.savefig('output_plot.png')
     plt.show()
 
-def plot_accuracy_vs_error_every_epoch(args, reconstruction_errors, accuracy_losses, method_to_test, all_epsilons, all_min_samples_values, all_noise_scale_values):
+def plot_accuracy_vs_error_every_epoch(args, reconstruction_errors, accuracy_losses, method_to_test, all_epsilons, all_min_samples_values='', all_noise_scale_values=''):
     """
     Plot accuracy loss vs. reconstruction error with annotations.
 
@@ -48,9 +48,21 @@ def plot_accuracy_vs_error_every_epoch(args, reconstruction_errors, accuracy_los
     plt.title('Accuracy Loss vs. Reconstruction Error')
     plt.suptitle(f'Parameters: {args.model}: {method_to_test}, {args.optimizer}, {args.loss_type}')
 
-    # Add text annotations for each point with epsilon, min_samples, and noise_scale values
-    for i, (error, loss, epsilon, min_samples, noise_scale) in enumerate(zip(reconstruction_errors, accuracy_losses, all_epsilons, all_min_samples_values, all_noise_scale_values)):
-        plt.text(error, loss, f'({epsilon=:.2f}, {min_samples=}, {noise_scale=:.2f})', fontsize=6, ha='center', va='bottom')
+    if args.method == "cluster":
+        # Add text annotations for each point with epsilon, min_samples, and noise_scale values
+        for i, (error, loss, epsilon, min_samples, noise_scale) in enumerate(zip(reconstruction_errors, accuracy_losses, all_epsilons, all_min_samples_values, all_noise_scale_values)):
+            plt.text(error, loss, f'({epsilon=:.2f}, {min_samples=}, {noise_scale=:.2f})', fontsize=6, ha='center', va='bottom')
+
+    elif args.method == "pca":
+        # Add text annotations for each point with noise_scale values
+        for i, (error, loss, noise_scale) in enumerate(zip(reconstruction_errors, accuracy_losses, all_noise_scale_values)):
+            plt.text(error, loss, f'({noise_scale=:.2f})', fontsize=6, ha='center', va='bottom')
+
+    elif args.method == "uniform" or args.method == "gaussian" or args.method == "laplace":
+        # Add text annotations for each point with eps values
+        for i, (error, loss, epsilon) in enumerate(zip(reconstruction_errors, accuracy_losses, all_epsilons)):
+            plt.text(error, loss, f'({epsilon=:.2f})', fontsize=6, ha='center', va='bottom')
+
     plt.savefig('output_plot.png')
     plt.show()
 
@@ -100,7 +112,7 @@ def visualize_clusters_with_anonymized_3d(test_embeddings, anonymized_embeddings
     ax = fig.add_subplot(111, projection='3d')
 
     # Plot the original test embeddings
-    ax.scatter(test_embeddings[:, 0], test_embeddings[:, 1], test_embeddings[:, 2],s = 5, c='blue', label='Original Test Embeddings')
+    ax.scatter(test_embeddings[:, 0], test_embeddings[:, 1], test_embeddings[:, 2],s = 0.5, c='blue', label='Original Test Embeddings')
 
     # Plot the cluster edges
     for cluster_edge in cluster_edges:

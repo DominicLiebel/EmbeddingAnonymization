@@ -118,6 +118,9 @@ test_labels = torch.tensor(test_labels, dtype=torch.long)
 train_embeddings = torch.as_tensor(train_embeddings, dtype=torch.float32).clone().detach()
 test_embeddings = torch.as_tensor(test_embeddings, dtype=torch.float32).clone().detach()
 
+train_embeddings = torch.nn.functional.normalize(train_embeddings, dim=1)
+test_embeddings = torch.nn.functional.normalize(test_embeddings, dim=1)
+
 # Define a simple neural network model
 class ModifiedModel(torch.nn.Module):
     def __init__(self, input_size, output_size):
@@ -160,6 +163,7 @@ with torch.no_grad():
     test_outputs = model(test_embeddings)
     _, predicted_labels = torch.max(test_outputs, 1)
     accuracy = accuracy_score(test_labels.numpy(), predicted_labels.numpy())
+
 
 print(f'Accuracy on CIFAR-10 Test Dataset: {accuracy * 100:.2f}%')
 
