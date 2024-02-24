@@ -1,114 +1,106 @@
+#train.py
+
+from train_util import AverageMeter
+import time
 import torch
-import torch.nn as nn
 
-import datetime
-
-from datasets import prepare_data_loaders
-from utils import seed_all, save_final_model, BestModelSaver, get_available_device
-from visualization import save_plots
+# Set seeds for reproducibility
+torch.manual_seed(42)
 
 
-def compute_accuracy(predicted, labels):
-    predictions, predicted_labels = torch.max(predicted, dim=1)
-    return torch.tensor(torch.sum(predicted_labels == labels).item()/len(predicted))
+def train(epoch, data_loader, model, optimizer, criterion):
 
+    iter_time = AverageMeter()
+    losses = AverageMeter()
+    acc = AverageMeter()
 
-def validate(model, dl, loss_func):
-    model.eval()
-    loss_per_batch, accuracy_per_batch = [], []
-    for images, labels in dl:
-        # start loop
+    for idx, (data, target) in enumerate(data_loader):
+        start = time.time()
+
+        if torch.cuda.is_available():
+            data = data.cuda()
+            target = target.cuda()
+
+        data = data.to(torch.float32)
+
+        out = model(data)
+        loss = criterion(out, target)
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+        batch_acc = accuracy(out, target)
+
+        losses.update(loss, out.shape[0])
+        acc.update(batch_acc, out.shape[0])
+
+        iter_time.update(time.time() - start)
+        if idx % 10 == 0:
+            print(('Epoch: [{0}][{1}/{2}]\t'
+                   'Time {iter_time.val:.3f} ({iter_time.avg:.3f})\t'
+                   'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
+                   'Prec @1 {top1.val:.4f} ({top1.avg:.4f})\t')
+                  .format(epoch, idx, len(data_loader), iter_time=iter_time, loss=losses, top1=acc))
+
+def accuracy(output, target):
+    """Computes the precision@k for the specified values of k"""
+    batch_size = target.shape[0]
+
+    _, pred = torch.max(output, dim=-1)
+
+    correct = pred.eq(target).sum() * 1.0
+
+    acc = correct.item() / batch_size
+
+    return acc
+
+def validate(epoch, val_loader, model, criterion, file_path):
+    iter_time = AverageMeter()
+    losses = AverageMeter()
+    acc = AverageMeter()
+
+    if "cifar100" in file_path:
+        num_class = 100
+    else:
+        num_class = 10
+    cm = torch.zeros(num_class, num_class)
+
+    # evaluation loop
+    for idx, (data, target) in enumerate(val_loader):
+        start = time.time()
+
+        if torch.cuda.is_available():
+            data = data.cuda()
+            target = target.cuda()
+
+        data = data.to(torch.float32)
+
         with torch.no_grad():
-            predicted = model(images)
-        loss_per_batch.append(loss_func(predicted, labels))
-        accuracy_per_batch.append(compute_accuracy(predicted, labels))
-    epoch_val_loss = torch.stack(loss_per_batch).mean().item()
-    epoch_val_acc = torch.stack(accuracy_per_batch).mean().item()
-    return epoch_val_loss, epoch_val_acc
+            out = model(data)
+            loss = criterion(out, target)
 
 
-def train(num_classes, model, model_name,
-          batch_size, num_workers, epochs,
-          lr_scheduler,
-          loss_func, optimizer, grad_clip,
-          train_transform, test_transform,
-          patience=7, gamma=0.5, #or gamma=0.1,
-          optim_code=''
-          ):
-    seed_all(42)
+        batch_acc = accuracy(out, target)
 
-    train_dl, valid_dl = prepare_data_loaders(num_classes, batch_size, num_workers, train_transform, test_transform)
+        # update confusion matrix
+        _, preds = torch.max(out, 1)
+        for t, p in zip(target.view(-1), preds.view(-1)):
+            cm[t.long(), p.long()] += 1
 
-    plot_lrs = False
+        losses.update(loss, out.shape[0])
+        acc.update(batch_acc, out.shape[0])
 
-    # start training
-    results = []
-    current_datetime = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        iter_time.update(time.time() - start)
+        #if idx % 10 == 0:
+            #print(('Epoch: [{0}][{1}/{2}]\tTime {iter_time.val:.3f} ({iter_time.avg:.3f})\t').
+                  #format(epoch+1, idx, len(val_loader)+1, iter_time=iter_time, loss=losses, top1=acc))
 
-    # initialize SaveBestModel class
-    save_best_model = BestModelSaver()
+    cm = cm / cm.sum(1)
+    per_cls_acc = cm.diag().detach().numpy().tolist()
 
-    for epoch in range(epochs):
-        model.train()
-        train_losses = []
-        train_accuracies = []
-        lrs = []
+    for i, acc_i in enumerate(per_cls_acc):
+        print("Accuracy of Class {}: {:.4f}".format(i+1, acc_i))
 
-        for batch_idx, (images, labels) in enumerate(train_dl):
-            predicted = model(images)
-            loss = loss_func(predicted, labels)
-            train_losses.append(loss)
-            optimizer.zero_grad()
-            loss.backward()
+    print("* Avg Prec: {top1.avg:.4f}".format(top1=acc))
 
-            # OPTIMIZATION: Gradient clipping
-            if grad_clip:
-                nn.utils.clip_grad_value_(model.parameters(), grad_clip)
-
-            optimizer.step()
-
-            # OPTIMIZATION: Keep track of learning rate
-            lrs.append(optimizer.param_groups[0]['lr'])
-
-            train_accuracies.append(compute_accuracy(predicted, labels))
-
-            # logging
-            if not batch_idx % 120:
-                print (f'Epoch: {epoch+1:03d}/{epochs:03d} | '
-                      f'Batch {batch_idx+1:03d}/{len(train_dl):03d} | '
-                      f'Loss: {loss:.4f}')
-
-        if lr_scheduler:
-            lr_scheduler.step()
-            plot_lrs = True
-
-        # no need to build the computation graph for backprop when computing accuracy
-        with torch.set_grad_enabled(False):
-            epoch_train_acc = torch.stack(train_accuracies).mean().item()
-            epoch_train_loss = torch.stack(train_losses).mean().item()
-            epoch_val_loss, epoch_val_acc = validate(model, valid_dl, loss_func)
-
-        results.append({'avg_valid_loss': epoch_val_loss,
-                        'avg_val_acc': epoch_val_acc,
-                        'avg_train_loss': epoch_train_loss,
-                        'avg_train_acc': epoch_train_acc,
-                        'lrs': lrs})
-
-        # print training/validation statistics
-        print(f'Epoch: {epoch+1:03d}/{epochs:03d}   Train Loss: {epoch_train_loss:.4f} | Train Acc.: {epoch_train_acc*100:.2f}%'
-              f' | Validation Loss: {epoch_val_loss:.4f} | Validation Acc.: {epoch_val_acc*100:.2f}%')
-
-        # save model if validation loss has decreased (validation loss ever increasing indicates possible overfitting.)
-        save_best_model(
-            num_classes, current_datetime, model, model_name, optimizer, loss_func, epoch_val_loss, epoch, optim_code
-        )
-        print('-' * 50)
-
-    # save the trained model weights for a final time
-    save_final_model(num_classes, current_datetime, model, model_name, optimizer, loss_func, epochs, results, optim_code)
-    # save the loss and accuracy plots
-    save_plots(num_classes, current_datetime, model_name, epochs, results, optim_code, plot_lrs)
-    print('TRAINING FINISHED')
-
-
-
+    return acc.avg, cm
