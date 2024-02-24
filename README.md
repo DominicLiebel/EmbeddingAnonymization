@@ -91,7 +91,8 @@ To get started, follow these steps:
 2. Navigate to the project directory: `cd EmbeddingAnonymization`
 3. Install the required dependencies: `pip install -r requirements.txt`
 4. Provide: `test_cifar10.npz, train_cifar10.npz, test_cifar100.npz, train_cifar100.npz`
-5. Run the main script: `python main.py`
+5. Configure: `config.yaml`
+6. Run the main script: `python main.py`
 
 # Experiments
 **The Experiments Jupyter notebook demonstrates several techniques for anonymizing embeddings, evaluating the effectiveness of the anonymization, and visualizing the results.** 
