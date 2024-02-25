@@ -124,7 +124,7 @@ To get started with the further experiments:
 4. Explore the visualization to understand the effectiveness of the anonymization techniques.
 Feel free to explore and modify the code based on your specific requirements.
 
-##Contant Information
+## Contant Information
 You can contant me at dominic.liebel@gmail.com
 
 ## First Tries
