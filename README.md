@@ -124,6 +124,9 @@ To get started with the further experiments:
 4. Explore the visualization to understand the effectiveness of the anonymization techniques.
 Feel free to explore and modify the code based on your specific requirements.
 
+##Contant Information
+You can contant me at dominic.liebel@gmail.com
+
 ## First Tries
 <img width="330" alt="image" src="https://github.com/DominicLiebel/EmbeddingAnonymization/assets/20253502/4f288bd4-02eb-4530-af99-8da8cdfbd8c2">
 <img width="330" alt="image" src="https://github.com/DominicLiebel/EmbeddingAnonymization/assets/20253502/cb621191-1809-4a17-8b4c-ca5516c52ca3">
