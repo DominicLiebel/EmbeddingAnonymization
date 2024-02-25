@@ -19,12 +19,6 @@ This Python project aims to anonymize embeddings while maintaining high utility.
   e.g.: `Reconstruction Error: 4.0027`
 - **Mean Relative Difference:** Mean relative differences measure the average percentage change between the original and anonymized embeddings for each image.<br>
   e.g.: `Image 1 -> Mean Relative Difference: 69.68424224853516%`
-- **Relative Reconstruction Error:** Relative reconstruction error provides a normalized measure of the reconstruction error by dividing the reconstruction error by the total variance of the original data.
-- **Variance Retention:** Variance retention represents the proportion of variance preserved after the anonymization process compared to the original embeddings.
-- **Projection Robustness:** Projection robustness assesses the stability of the embeddings under different projection methods, providing insights into the robustness of the anonymization technique.
-
-These metrics collectively offer a nuanced understanding of the anonymization process, catering to different goals and considerations depending on the specific context and requirements.
-
 
 
 ### Density Based Anonymization (CIFAR100)
